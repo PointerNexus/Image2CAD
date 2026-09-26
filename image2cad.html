@@ -12,6 +12,25 @@ body{background:#f7f8fa;color:#111827;font:14px/1.55 -apple-system,BlinkMacSyste
 header{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;flex-wrap:wrap}
 h1{font-size:17px;font-weight:600;margin:0;letter-spacing:.2px}
 .sub{font-size:12.5px;color:#6b7280}
+/* about: link parked at the far end of the header, plus a plain overlay */
+.about-btn{margin-left:auto;align-self:center;font:inherit;font-size:12.5px;color:#6b7280;
+  background:none;border:1px solid #e5e7eb;border-radius:999px;padding:3px 12px;cursor:pointer;line-height:1.6}
+.about-btn:hover{color:#111827;border-color:#d1d5db;background:#f9fafb}
+.about-btn:focus-visible{outline:2px solid #111827;outline-offset:2px}
+.about-mask{position:fixed;inset:0;background:rgba(17,24,39,.34);display:none;
+  align-items:center;justify-content:center;padding:20px;z-index:50}
+.about-mask.on{display:flex}
+.about{background:#fff;border-radius:12px;box-shadow:0 18px 48px rgba(17,24,39,.22);
+  max-width:420px;width:100%;padding:22px 24px 20px}
+.about h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.about .ver{font-size:12.5px;color:#6b7280;margin:0 0 16px}
+.about dl{margin:0;display:grid;grid-template-columns:76px minmax(0,1fr);gap:9px 12px;align-items:baseline}
+.about dt{font-size:12.5px;color:#6b7280}
+.about dd{margin:0;font-size:13px;min-width:0;overflow-wrap:anywhere}
+.about dd a{color:#111827}
+.about .close{margin-top:18px;width:100%;font:inherit;font-size:13px;padding:7px 0;cursor:pointer;
+  background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;color:#111827}
+.about .close:hover{background:#e5e7eb}
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 294px;gap:14px;align-items:start}
 .preview{position:relative;overflow:hidden}
@@ -81,6 +100,7 @@ select{border:1px solid #e5e7eb;border-radius:5px;padding:4px 6px;font:inherit;f
   <header>
     <h1>图片转 CAD 指令</h1>
     <span class="sub">导入图片 → 提取中心线与轮廓 → 复制指令到 CAD 命令行</span>
+    <button class="about-btn" id="aboutBtn" type="button" aria-haspopup="dialog">关于</button>
   </header>
 
   <div class="main">
@@ -1755,6 +1775,61 @@ globalThis.Image2Cad = {
   window.addEventListener('resize', function () { fitView(); render(); });
   syncLabels();
   render();
+})();
+</script>
+
+<div class="about-mask" id="aboutMask" hidden>
+  <div class="about" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <h2 id="aboutTitle">图片转 CAD 指令</h2>
+    <p class="ver">版本 <span id="aboutVer"></span></p>
+    <dl>
+      <dt>仓库</dt>
+      <dd><a id="aboutRepo" href="#" target="_blank" rel="noopener noreferrer"></a></dd>
+      <dt>作者</dt>
+      <dd id="aboutAuthor"></dd>
+    </dl>
+    <button class="close" id="aboutClose" type="button">关闭</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Kept in step with package.json by tests/versions.mjs.
+  var VERSION = '0.1.0';
+  var AUTHOR = 'PointerNexus';
+  var REPO = 'https://github.com/PointerNexus/Image2CAD';
+
+  var btn = document.getElementById('aboutBtn');
+  var mask = document.getElementById('aboutMask');
+  var close = document.getElementById('aboutClose');
+  if (!btn || !mask) return;
+
+  document.getElementById('aboutVer').textContent = VERSION;
+  document.getElementById('aboutAuthor').textContent = AUTHOR;
+  var repo = document.getElementById('aboutRepo');
+  repo.textContent = REPO;
+  repo.href = REPO;
+
+  var lastFocus = null;
+  function open() {
+    lastFocus = document.activeElement;
+    mask.hidden = false;
+    mask.classList.add('on');
+    close.focus();
+  }
+  function hide() {
+    mask.classList.remove('on');
+    mask.hidden = true;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  btn.addEventListener('click', open);
+  close.addEventListener('click', hide);
+  // click on the backdrop itself, not the panel
+  mask.addEventListener('click', function (e) { if (e.target === mask) hide(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !mask.hidden) hide();
+  });
 })();
 </script>
 </body>

@@ -11,7 +11,9 @@
     "test:gap": "node tests/dbg-gap.mjs",
     "test:dt": "node tests/dbg-dt.mjs",
     "test:line": "node tests/dbg-line.mjs",
-    "test:all": "node tests/dbg-diag.mjs && node tests/dbg-dt.mjs && node tests/dbg-fit.mjs && node tests/dbg-gap.mjs && node tests/core.test.mjs"
+    "test:all": "node tests/versions.mjs && node tests/dbg-diag.mjs && node tests/dbg-dt.mjs && node tests/dbg-fit.mjs && node tests/dbg-gap.mjs && node tests/core.test.mjs",
+    "test:about": "node tests/about-probe.mjs",
+    "test:versions": "node tests/versions.mjs"
   },
   "engines": {
     "node": ">=18"
