@@ -29,23 +29,18 @@
 
 给它一张 PNG 或 JPG，它还给你一堆**能在 CAD 里直接选中、编辑**的线条和圆弧 —— 可以拿去激光切割、数控加工，或者接着改。
 
-关键差别在这儿：大多数描图工具会把一条 6 像素粗的线描成**两条平行线**，出来的东西没法用。这个工具会先量出线的粗细，再算出**中心线**，只给你一条。圆还是 `CIRCLE`，圆弧是完整的一根 `ARC`。
-
-整个程序就是**一个 HTML 文件**，双击就能用，不用装环境，断网也能跑。
+| 输入 | 输出 |
+|---|---|
+| 直线笔画 | `LINE` |
+| 圆弧 | `ARC` |
+| 圆 / 圆环 | `CIRCLE` |
+| 封闭轮廓 | `pline` 模式下为 `PLINE`，默认 `prim` 模式下拆成基本图元 |
 
 ## What this is
 
 Give it a PNG or JPG and it hands back `LINE`, `ARC`, `CIRCLE` and `PLINE`
 entities you can select and edit in CAD &mdash; ready for laser cutting, CNC, or
 further editing.
-
-The part that actually matters: most tracers turn a 6 px stroke into **two
-parallel lines**, which is useless downstream. This one measures how thick the
-stroke is and emits a single **centre line** instead. Circles come back as
-`CIRCLE`, arcs as one unbroken `ARC`.
-
-The whole program is **one HTML file**. Double-click it and it runs &mdash; no
-install, no dependencies, works offline.
 
 | | |
 |---|---|
@@ -54,41 +49,18 @@ install, no dependencies, works offline.
 | **Repository** | <https://github.com/PointerNexus/Image2CAD> |
 | **Licence** | [MIT](LICENSE) |
 
-## 为什么是中心线
-
-描图工具的原理是沿着每个形状的**外轮廓**走一遍，所以一条 6 像素宽的线会被描出两条边
-—— 画 logo 够了，做 CNC 完全不行。
-
-这个工具先用卡尺宽度量出每条轮廓的厚度，对那些「相对于长度足够细」的笔画走一遍**中轴
-（medial axis）**，取最中间的那条线输出。圆识别成 `CIRCLE`，圆弧拟合成单根 `ARC`。
-
-| 输入 | 输出 |
-|---|---|
-| 直线笔画 | `LINE` |
-| 圆弧 | `ARC` |
-| 圆 / 圆环 | `CIRCLE` |
-| 封闭轮廓 | `pline` 模式下为 `PLINE`，默认 `prim` 模式下拆成基本图元 |
-
 ## 下载
 
 从 [releases 页面](https://github.com/PointerNexus/Image2CAD/releases) 直接拿编译好的
-exe —— 单文件、免安装、卸载时删掉一个目录就完事：
+exe：
 
 | 版本 | 文件 | 说明 |
 |---|---|---|
 | [v0.2.0](https://github.com/PointerNexus/Image2CAD/releases/tag/v0.2.0) | [`Image2CAD-0.2.0.exe`](https://github.com/PointerNexus/Image2CAD/releases/download/v0.2.0/Image2CAD-0.2.0.exe) | 当前版本，带「关于」面板 |
 | [v0.1.0](https://github.com/PointerNexus/Image2CAD/releases/tag/v0.1.0) | [`Image2CAD-0.1.0.exe`](https://github.com/PointerNexus/Image2CAD/releases/download/v0.1.0/Image2CAD-0.1.0.exe) | 首个公开版本 |
 
-首次运行会把运行时解压到 `%LOCALAPPDATA%\Image2CAD`。exe 放在只读目录（比如
-`Program Files`）里也能正常跑。
-
-不想装任何东西的话，直接用浏览器打开仓库里的
-[`image2cad.html`](image2cad.html) 就行。
-
-## 使用
-
-用 Edge 或 Chrome 打开 `image2cad.html`，拖进一张图，点转换，然后复制结果或保存。
-右上角有个**「关于」**按钮，里面是仓库地址、版本号和作者。
+如果你不想装任何东西，可以尝试直接打开仓库里的
+[`image2cad.html`](image2cad.html)。
 
 ## 编译 Windows 版
 
