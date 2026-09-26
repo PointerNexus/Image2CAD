@@ -51,8 +51,8 @@ further editing.
 
 ## 下载
 
-从 [releases 页面](https://github.com/PointerNexus/Image2CAD/releases) 直接拿编译好的
-exe：
+从 [releases 页面](https://github.com/PointerNexus/Image2CAD/releases) 获取已编译的可执行
+文件：
 
 | 版本 | 文件 | 说明 |
 |---|---|---|
@@ -73,24 +73,12 @@ cd packaging
 dotnet publish -c Release -o ./out
 ```
 
-产物是 `out/Image2CAD.exe`，约 48 MB，.NET 运行时和页面都打进去了。页面从仓库根目录
-嵌入，所以改完 `image2cad.html` 重新编译一次就行。
+产物为 `out/Image2CAD.exe`，约 48 MB，其中已包含 .NET 运行时与页面资源。页面自仓库根目录
+嵌入，修改 `image2cad.html` 后重新编译即可生效。
 
-页面走的是虚拟主机（`https://app.image2cad.local`）而不是 `file://`，因为剪贴板
-`navigator.clipboard` 只在安全上下文可用。WebView2 的用户数据写在
-`%LOCALAPPDATA%\Image2CAD`，不放在 exe 旁边。
-
-### 图标
-
-`packaging/icon.ico` 包含 9 种尺寸（16 到 256），图形是代码生成的，不是手画的：
-
-```sh
-cd tools/IconGen
-dotnet run -c Release -- ../../packaging/icon.ico
-```
-
-改 `Program.cs` 顶部的颜色常量和几何参数就能换风格，旁边会同时输出一张 256 像素的
-`icon.png` 预览。
+页面由虚拟主机 `https://app.image2cad.local` 承载，而非 `file://`，因为剪贴板接口
+`navigator.clipboard` 仅在安全上下文中可用。WebView2 的用户数据写入
+`%LOCALAPPDATA%\Image2CAD`，不存放于可执行文件所在目录。
 
 ## 测试
 
@@ -112,17 +100,17 @@ npm run test:all      # versions + diag + dt + fit + gap + core
 | `npm run test:line` | 直线与圆弧的端到端输出 |
 | `npm run test:about` | 在无头 Edge 里驱动「关于」面板，19 项检查 |
 
-`test:about` 的对比度是从 `getComputedStyle` 实际算出来的，不是写死的数字，所以按钮
-哪天被调回灰色混入界面，测试会直接失败。
+`test:about` 的对比度数值由 `getComputedStyle` 在渲染后实际计算得出，而非硬编码常量；
+若该按钮被改回灰色并与界面混同，测试将直接失败。
 
-`tests/make-e2e.mjs`、`make-layout.mjs`、`make-photo.mjs` 会生成一份带 `#RESULT`
-探针的页面副本，用浏览器打开读那个元素就能在真实环境里查错误和布局。
+`tests/make-e2e.mjs`、`make-layout.mjs`、`make-photo.mjs` 生成带 `#RESULT` 探针的页面副本，
+在浏览器中打开并读取该元素，即可在真实环境中检查错误与布局。
 
 > [!NOTE]
-> 核心断言 **49 条过 46 条**。这 3 条失败是同一个原因：栅格化出来的矩形转角被削掉了
-> 一个像素，`prim` 模式下轮廓变成 3 条或 2 条 `LINE`，而预期是 4 条。
+> 核心断言 **49 条中通过 46 条**。3 条失败源于同一原因：栅格化后的矩形转角缺失一个像素，
+> `prim` 模式下轮廓解析为 3 条或 2 条 `LINE`，预期为 4 条。
 >
-> `npm run test:gap` 报告三角形转角最坏还有 3 px 缺口，闭合吸附暂时没能合上。
+> `npm run test:gap` 报告三角形转角最大残留 3 px 缺口，闭合吸附尚未完全消除该偏差。
 
 ## 工作原理
 
@@ -137,22 +125,24 @@ image
   -> DXF / SCR writer
 ```
 
-阈值这一段要放在模糊之后：直接在**未模糊**的图上跑 Otsu，会把平滑的抗锯齿边缘打成
-麻点，实体数量跟着虚高。
+阈值计算必须置于模糊之后：若直接在**未模糊**图像上执行 Otsu，平滑的抗锯齿边缘会被量化为
+离散噪点，导致实体数量虚高。
 
 ## 目录结构
 
 ```
 image2cad.html          整个应用
 packaging/              .NET 9 + WebView2 单文件 exe 外壳
-tools/IconGen/          生成 packaging/icon.ico
 tests/                  Node 测试脚本，零依赖
 ```
 
 ## 许可
 
-[MIT](LICENSE) &mdash; 别人可以随便用、随便改、包括拿去商用和二次分发，唯一的要求是
-在副本里保留这份版权声明。
+本项目采用 [MIT](LICENSE) 协议发布。
 
-换句话说，别人可以把你这个工具嵌进他自己的商业软件里，也可以 fork 了一份自己改，这都
-没问题。
+授权范围包括使用、复制、修改、合并、发布、分发、再许可及销售本软件的全部或部分副本，并
+允许将本软件用于商业用途。唯一的附加义务为保留版权声明与许可声明：上述授权涉及的任何副本
+或实质性部分，均须包含本许可声明。
+
+本软件按「现状」提供，不附带任何明示或默示的担保，包括但不限于对适销性与特定用途适用性
+的担保。作者不对使用本软件所导致的任何损失承担责任。
