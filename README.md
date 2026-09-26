@@ -1,32 +1,51 @@
 <h1 align="center">Image2CAD</h1>
 <p align="center">
-  <b>Raster image &rarr; editable CAD geometry</b><br>
-  <sub>LINE &middot; ARC &middot; CIRCLE &middot; PLINE &nbsp;&mdash;&nbsp; one self-contained HTML file, zero dependencies</sub>
+  <b>把图片变成能编辑的 CAD 线条</b><br>
+  <sub>Turn a raster picture into editable CAD geometry &mdash; LINE &middot; ARC &middot; CIRCLE &middot; PLINE</sub>
 </p>
 <p align="center">
   <a href="https://github.com/PointerNexus/Image2CAD/releases/download/v0.2.0/Image2CAD-0.2.0.exe">
-    <img alt="Download Image2CAD for Windows" src="https://img.shields.io/badge/%E2%9A%99%20Download-Image2CAD%20%E2%80%93%20Windows-111827?style=for-the-badge">
+    <img alt="Download Image2CAD for Windows" src="https://img.shields.io/badge/%E2%9A%99%20Download-Image2CAD%20%E2%80%93%20Windows-2563eb?style=for-the-badge">
   </a>
   <a href="https://github.com/PointerNexus/Image2CAD/releases">
-    <img alt="All releases" src="https://img.shields.io/badge/releases-0.2.0-6b7280?style=for-the-badge">
+    <img alt="All releases" src="https://img.shields.io/badge/%F0%9F%93%85%20All%20releases-a855f7?style=for-the-badge">
+  </a>
+  <a href="#%E4%B8%8B%E8%BD%BD">
+    <img alt="Source and build instructions" src="https://img.shields.io/badge/%F0%9F%94%A5%20Source-34d399?style=for-the-badge">
   </a>
 </p>
 <p align="center">
-  <a href="#why-centre-lines-matter">Why centre lines</a> &middot;
-  <a href="#use-it">Use it</a> &middot;
-  <a href="#build-the-windows-exe">Build</a> &middot;
-  <a href="#tests">Tests</a> &middot;
-  <a href="#how-it-works">How it works</a>
+  <img alt="version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-3b82f6?style=flat-square">
+  <img alt="platform Windows and Chromium" src="https://img.shields.io/badge/platform-Windows%20%7C%20Chromium-0ea5e9?style=flat-square">
+  <img alt="single HTML file" src="https://img.shields.io/badge/one_HTML_file-8b5cf6?style=flat-square">
+  <img alt="no dependencies" src="https://img.shields.io/badge/dependencies-none-16a34a?style=flat-square">
+  <img alt="offline capable" src="https://img.shields.io/badge/offline-22c55e?style=flat-square">
+  <img alt="licence not yet declared" src="https://img.shields.io/badge/licence-not%20yet%20declared-eab308?style=flat-square">
 </p>
 
 ---
 
-Point it at a PNG or JPG and it emits DXF/SCR containing `LINE`, `ARC`, `CIRCLE`
-and `PLINE` entities &mdash; outer contours, interior detail, and the **centre
-line** of thick strokes.
+## 这是什么
 
-The whole app is one HTML file with no dependencies and no build step. Open it
-and it works, including offline and straight from `file://`.
+给它一张 PNG 或 JPG，它还给你一堆**能在 CAD 里直接选中、编辑**的线条和圆弧 —— 可以拿去激光切割、数控加工，或者接着改。
+
+关键差别在这儿：大多数描图工具会把一条 6 像素粗的线描成**两条平行线**，出来的东西没法用。这个工具会先量出线的粗细，再算出**中心线**，只给你一条。圆还是 `CIRCLE`，圆弧是完整的一根 `ARC`。
+
+整个程序就是**一个 HTML 文件**，双击就能用，不用装环境，断网也能跑。
+
+## What this is
+
+Give it a PNG or JPG and it hands back `LINE`, `ARC`, `CIRCLE` and `PLINE`
+entities you can select and edit in CAD &mdash; ready for laser cutting, CNC, or
+further editing.
+
+The part that actually matters: most tracers turn a 6 px stroke into **two
+parallel lines**, which is useless downstream. This one measures how thick the
+stroke is and emits a single **centre line** instead. Circles come back as
+`CIRCLE`, arcs as one unbroken `ARC`.
+
+The whole program is **one HTML file**. Double-click it and it runs &mdash; no
+install, no dependencies, works offline.
 
 | | |
 |---|---|
@@ -35,142 +54,130 @@ and it works, including offline and straight from `file://`.
 | **Repository** | <https://github.com/PointerNexus/Image2CAD> |
 | **Licence** | not yet declared |
 
-## Download
+## 为什么是中心线
 
-Grab a prebuilt executable from the
-[releases page](https://github.com/PointerNexus/Image2CAD/releases) &mdash; a
-single self-contained `.exe`, no installer, nothing to uninstall:
+描图工具的原理是沿着每个形状的**外轮廓**走一遍，所以一条 6 像素宽的线会被描出两条边
+—— 画 logo 够了，做 CNC 完全不行。
 
-| Release | Asset | Notes |
-|---|---|---|
-| [v0.2.0](https://github.com/PointerNexus/Image2CAD/releases/tag/v0.2.0) | [`Image2CAD-0.2.0.exe`](https://github.com/PointerNexus/Image2CAD/releases/download/v0.2.0/Image2CAD-0.2.0.exe) | current, has the in-app About panel |
-| [v0.1.0](https://github.com/PointerNexus/Image2CAD/releases/tag/v0.1.0) | [`Image2CAD-0.1.0.exe`](https://github.com/PointerNexus/Image2CAD/releases/download/v0.1.0/Image2CAD-0.1.0.exe) | first public build |
+这个工具先用卡尺宽度量出每条轮廓的厚度，对那些「相对于长度足够细」的笔画走一遍**中轴
+（medial axis）**，取最中间的那条线输出。圆识别成 `CIRCLE`，圆弧拟合成单根 `ARC`。
 
-First run unpacks the runtime into `%LOCALAPPDATA%\Image2CAD`. The exe also
-works from read-only locations such as `Program Files`.
-
-If you would rather not install anything, just open
-[`image2cad.html`](image2cad.html) from the repository in any Chromium-based
-browser or Edge.
-
-## Why centre lines matter
-
-Naive bitmap tracing walks the outline of every shape, so a 6 px wide line
-comes out as **two parallel lines**. That is fine for logos and useless for
-laser cutting, CNC, or editing in CAD. This tool measures stroke thickness
-(caliper width over the contour), walks the **medial axis** of strokes that are
-thin relative to their length, and emits a single line down the middle. Circles
-are recovered as `CIRCLE`, circular arcs as a single `ARC`.
-
-| Input | Emitted |
+| 输入 | 输出 |
 |---|---|
-| straight stroke | `LINE` |
-| circular arc | `ARC` |
-| circle or ring | `CIRCLE` |
-| closed outline | `PLINE` in `pline` mode, `prim` entities by default |
+| 直线笔画 | `LINE` |
+| 圆弧 | `ARC` |
+| 圆 / 圆环 | `CIRCLE` |
+| 封闭轮廓 | `pline` 模式下为 `PLINE`，默认 `prim` 模式下拆成基本图元 |
 
-## Use it
+## 下载
 
-Open `image2cad.html` in Edge or Chrome. Drop in an image, press convert, then
-copy the result to the clipboard or save it. The header has an **About** button
-listing the repository, version and author.
+从 [releases 页面](https://github.com/PointerNexus/Image2CAD/releases) 直接拿编译好的
+exe —— 单文件、免安装、卸载时删掉一个目录就完事：
 
-## Build the Windows exe
+| 版本 | 文件 | 说明 |
+|---|---|---|
+| [v0.2.0](https://github.com/PointerNexus/Image2CAD/releases/tag/v0.2.0) | [`Image2CAD-0.2.0.exe`](https://github.com/PointerNexus/Image2CAD/releases/download/v0.2.0/Image2CAD-0.2.0.exe) | 当前版本，带「关于」面板 |
+| [v0.1.0](https://github.com/PointerNexus/Image2CAD/releases/tag/v0.1.0) | [`Image2CAD-0.1.0.exe`](https://github.com/PointerNexus/Image2CAD/releases/download/v0.1.0/Image2CAD-0.1.0.exe) | 首个公开版本 |
 
-Requires the [.NET 9 SDK](https://dotnet.microsoft.com/download). The wrapper
-hosts the page in a WebView2 window and needs the
-[WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/),
-which ships with Windows 10 and 11.
+首次运行会把运行时解压到 `%LOCALAPPDATA%\Image2CAD`。exe 放在只读目录（比如
+`Program Files`）里也能正常跑。
+
+不想装任何东西的话，直接用浏览器打开仓库里的
+[`image2cad.html`](image2cad.html) 就行。
+
+## 使用
+
+用 Edge 或 Chrome 打开 `image2cad.html`，拖进一张图，点转换，然后复制结果或保存。
+右上角有个**「关于」**按钮，里面是仓库地址、版本号和作者。
+
+## 编译 Windows 版
+
+需要 [.NET 9 SDK](https://dotnet.microsoft.com/download)。外壳程序用 WebView2 窗口
+承载页面，依赖 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)，
+Win10 和 Win11 都自带。
 
 ```sh
 cd packaging
 dotnet publish -c Release -o ./out
 ```
 
-That produces `out/Image2CAD.exe`, roughly 48 MB, carrying the .NET runtime
-and the page inside it. The page is embedded from the repository root, so after
-editing `image2cad.html` a rebuild is all that is needed.
+产物是 `out/Image2CAD.exe`，约 48 MB，.NET 运行时和页面都打进去了。页面从仓库根目录
+嵌入，所以改完 `image2cad.html` 重新编译一次就行。
 
-The page is served from a virtual host (`https://app.image2cad.local`) rather
-than `file://` so that `navigator.clipboard` is available &mdash; the clipboard
-is a secure-context API. WebView2 user data is written to
-`%LOCALAPPDATA%\Image2CAD`, not next to the exe.
+页面走的是虚拟主机（`https://app.image2cad.local`）而不是 `file://`，因为剪贴板
+`navigator.clipboard` 只在安全上下文可用。WebView2 的用户数据写在
+`%LOCALAPPDATA%\Image2CAD`，不放在 exe 旁边。
 
-### Icon
+### 图标
 
-`packaging/icon.ico` holds nine sizes (16 through 256). The artwork is
-generated, not hand-drawn:
+`packaging/icon.ico` 包含 9 种尺寸（16 到 256），图形是代码生成的，不是手画的：
 
 ```sh
 cd tools/IconGen
 dotnet run -c Release -- ../../packaging/icon.ico
 ```
 
-Edit the colour constants and geometry at the top of `Program.cs` to restyle
-it. A 256 px `icon.png` preview is written alongside the `.ico`.
+改 `Program.cs` 顶部的颜色常量和几何参数就能换风格，旁边会同时输出一张 256 像素的
+`icon.png` 预览。
 
-## Tests
+## 测试
 
-No dependencies beyond Node 18+.
+除了 Node 18+ 之外不需要任何依赖。
 
 ```sh
-npm test              # 49 assertions
+npm test              # 49 条断言
 npm run test:all      # versions + diag + dt + fit + gap + core
 ```
 
-| Script | Covers |
+| 命令 | 覆盖内容 |
 |---|---|
-| `npm test` | the core assertion suite |
-| `npm run test:versions` | app version matches `package.json`, repo url matches the git remote |
-| `npm run test:diag` | 35 angle &times; width combinations of diagonal strokes |
-| `npm run test:fit` | centre line, arc, ring, blob and rect fitting |
-| `npm run test:gap` | corner closure gaps |
-| `npm run test:dt` | distance transform |
-| `npm run test:line` | end-to-end line and arc output |
-| `npm run test:about` | drives the About panel in headless Edge, 19 checks |
+| `npm test` | 核心断言集 |
+| `npm run test:versions` | 应用版本与 `package.json` 一致、仓库地址与 git remote 一致 |
+| `npm run test:diag` | 35 组「角度 × 线宽」的斜线组合 |
+| `npm run test:fit` | 中心线、圆弧、圆环、blob、矩形的拟合 |
+| `npm run test:gap` | 转角闭合缺口 |
+| `npm run test:dt` | 距离变换 |
+| `npm run test:line` | 直线与圆弧的端到端输出 |
+| `npm run test:about` | 在无头 Edge 里驱动「关于」面板，19 项检查 |
 
-`test:about` measures the About button's contrast from `getComputedStyle`
-rather than trusting a hardcoded ratio, so it fails if the button is ever
-softened back into the grey chrome.
+`test:about` 的对比度是从 `getComputedStyle` 实际算出来的，不是写死的数字，所以按钮
+哪天被调回灰色混入界面，测试会直接失败。
 
-`tests/make-e2e.mjs`, `make-layout.mjs` and `make-photo.mjs` write an
-instrumented copy of the page with a `#RESULT` probe; open the generated file
-and read the element to inspect errors and layout in a real browser.
+`tests/make-e2e.mjs`、`make-layout.mjs`、`make-photo.mjs` 会生成一份带 `#RESULT`
+探针的页面副本，用浏览器打开读那个元素就能在真实环境里查错误和布局。
 
 > [!NOTE]
-> **46 of 49** core assertions pass. The three failures share one root cause: a
-> rasterised rectangle corner is chamfered by a pixel, so in `prim` mode the
-> outline resolves to 3 or 2 `LINE` entities where 4 are expected.
+> 核心断言 **49 条过 46 条**。这 3 条失败是同一个原因：栅格化出来的矩形转角被削掉了
+> 一个像素，`prim` 模式下轮廓变成 3 条或 2 条 `LINE`，而预期是 4 条。
 >
-> `npm run test:gap` reports a worst-case corner gap of 3 px on a triangle.
-> Closure snapping does not close it yet.
+> `npm run test:gap` 报告三角形转角最坏还有 3 px 缺口，闭合吸附暂时没能合上。
 
-## How it works
+## 工作原理
 
 ```
 image
-  -> toGray -> boxBlur -> otsu -> binarize   threshold on the blurred image
-  -> traceContours                            Moore-neighbour boundary walk
-  -> caliper widths                           thickness per contour
-  -> distance transform + medial axis        centre line of thick strokes
-  -> RDP + segmentize                         split into LINE / ARC runs
-  -> Kasa circle fit                          CIRCLE for round shapes
+  -> toGray -> boxBlur -> otsu -> binarize   在模糊后的图上取阈值
+  -> traceContours                            Moore 邻域边界追踪
+  -> caliper widths                           每条轮廓的粗细
+  -> distance transform + medial axis        粗笔画的中心线
+  -> RDP + segmentize                         切成 LINE / ARC 段
+  -> Kasa circle fit                          圆形识别为 CIRCLE
   -> DXF / SCR writer
 ```
 
-Thinning the threshold stage matters: running Otsu on the *unblurred* image
-turns smooth anti-aliased edges into speckle and inflates the entity count.
+阈值这一段要放在模糊之后：直接在**未模糊**的图上跑 Otsu，会把平滑的抗锯齿边缘打成
+麻点，实体数量跟着虚高。
 
-## Layout
+## 目录结构
 
 ```
-image2cad.html          the entire application
-packaging/              .NET 9 + WebView2 single-file exe wrapper
-tools/IconGen/          generates packaging/icon.ico
-tests/                  Node test scripts, no dependencies
+image2cad.html          整个应用
+packaging/              .NET 9 + WebView2 单文件 exe 外壳
+tools/IconGen/          生成 packaging/icon.ico
+tests/                  Node 测试脚本，零依赖
 ```
 
-## Licence
+## 许可
 
-No licence file yet, which means the default: all rights reserved. Say the word
-and I will add one &mdash; MIT is the usual choice for a tool like this.
+目前还没有 LICENSE 文件，也就是默认的「保留所有权利」。你要是想用，加一个就行 ——
+这类工具通常选 MIT。

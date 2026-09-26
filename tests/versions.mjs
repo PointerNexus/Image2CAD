@@ -64,16 +64,27 @@ for (const url of dl) {
 
 // In-page anchors must match the headings GitHub will generate. They appear
 // as markdown links and as raw <a href>, and this README uses both.
-const headings = [...readme.matchAll(/^#{1,6}\s+(.+)$/gm)].map((m) =>
-  m[1].toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-'));
+//
+// The slug has to keep CJK: most headings here are Chinese, and an ASCII-only
+// \w strips them to the empty string, which would make every Chinese heading
+// look like it matched nothing -- and quietly pass any bogus anchor.
+const slug = (t) => t.toLowerCase()
+  .replace(/[^\p{L}\p{N}\s-]/gu, '')
+  .trim()
+  .replace(/\s+/g, '-');
+const headings = [...readme.matchAll(/^#{1,6}\s+(.+)$/gm)].map((m) => slug(m[1]));
+const decode = (a) => { try { return decodeURIComponent(a); } catch { return a; } };
 const anchors = [
-  ...[...readme.matchAll(/\]\(#([a-z0-9-]+)\)/g)].map((m) => m[1]),
-  ...[...readme.matchAll(/href="#([a-z0-9-]+)"/g)].map((m) => m[1]),
+  ...[...readme.matchAll(/\]\(#([^)]+)\)/g)].map((m) => m[1]),
+  ...[...readme.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]),
 ];
 check('README has in-page anchors to check', anchors.length > 0);
-for (const a of [...new Set(anchors)]) {
+check('at least one heading slugified to something', headings.some(Boolean),
+  'slugify produced only empty strings');
+for (const raw of [...new Set(anchors)]) {
+  const a = decode(raw);
   check('anchor #' + a + ' resolves to a heading', headings.includes(a),
-    'no heading slugifies to that; have: ' + headings.join(', '));
+    'no heading slugifies to that; have: ' + headings.filter(Boolean).join(', '));
 }
 
 // Relative file references should exist in the repo.
