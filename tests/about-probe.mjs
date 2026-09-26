@@ -23,6 +23,33 @@ window.addEventListener('load', function () {
   ok('author rendered', q('#aboutAuthor').textContent === 'PointerNexus', q('#aboutAuthor').textContent);
   ok('repo text rendered', q('#aboutRepo').textContent === 'https://github.com/PointerNexus/Image2CAD', q('#aboutRepo').textContent);
   ok('repo href correct', q('#aboutRepo').href === 'https://github.com/PointerNexus/Image2CAD', q('#aboutRepo').href);
+
+  // WCAG relative luminance, so 'does it stand out' becomes a number.
+  function lum(c) {
+    var m = (c.match(/[0-9]+(\.[0-9]+)?/g) || []).slice(0, 3).map(Number);
+    if (m.length < 3) return NaN;
+    var f = m.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+  }
+  function ratio(a, b) {
+    var l1 = lum(a), l2 = lum(b), hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function bgOf(el) {
+    for (var n = el; n; n = n.parentElement) {
+      var c = getComputedStyle(n).backgroundColor;
+      if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c;
+    }
+    return 'rgb(255, 255, 255)';
+  }
+  var bs = getComputedStyle(btn);
+  var crText = ratio(bs.color, bs.backgroundColor);
+  var crVsPage = ratio(bs.backgroundColor, bgOf(btn.parentElement));
+  ok('button text contrast >= 4.5:1 (WCAG AA)', crText >= 4.5, crText.toFixed(2) + ':1');
+  ok('button fill stands off the page by >= 4.5:1', crVsPage >= 4.5, crVsPage.toFixed(2) + ':1');
+  ok('button fill is not transparent', bs.backgroundColor !== 'rgba(0, 0, 0, 0)', bs.backgroundColor);
+  ok('button border-radius is a pill', parseFloat(bs.borderTopLeftRadius) >= parseFloat(bs.height) / 2,
+     bs.borderTopLeftRadius + ' vs height ' + bs.height);
   var p = q('.about').getBoundingClientRect();
   var vw = document.documentElement.clientWidth;  // excludes the scrollbar; flexbox centres against this
   ok('panel horizontally centred', Math.abs((p.left + p.width/2) - vw/2) < 2, 'off by ' + Math.round(Math.abs((p.left+p.width/2)-vw/2)) + ' (clientWidth=' + vw + ' innerWidth=' + innerWidth + ')');
