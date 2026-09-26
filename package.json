@@ -1,6 +1,6 @@
 {
   "name": "image2cad",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Convert raster images to CAD geometry (LINE/ARC/CIRCLE/PLINE) with centre-line recovery for thick strokes",
   "private": true,
   "type": "module",

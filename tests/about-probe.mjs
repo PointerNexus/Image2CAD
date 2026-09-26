@@ -1,5 +1,10 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 const src = readFileSync(new URL('../image2cad.html', import.meta.url), 'utf8');
+// Take the expected version from package.json so bumping the version does not
+// mean also editing the test. The rendered value is still checked against a
+// value that comes from somewhere real.
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+const EXPECT = pkg.version;
 const probe = `
 <div id="RESULT" style="display:none"></div>
 <script>
@@ -19,7 +24,7 @@ window.addEventListener('load', function () {
   btn.click();
   ok('click opens panel', !mask.hidden && mask.classList.contains('on'));
   ok('panel is visible', getComputedStyle(mask).display === 'flex');
-  ok('version rendered', q('#aboutVer').textContent === '0.1.0', q('#aboutVer').textContent);
+  ok('version rendered', q('#aboutVer').textContent === ${JSON.stringify(EXPECT)}, q('#aboutVer').textContent);
   ok('author rendered', q('#aboutAuthor').textContent === 'PointerNexus', q('#aboutAuthor').textContent);
   ok('repo text rendered', q('#aboutRepo').textContent === 'https://github.com/PointerNexus/Image2CAD', q('#aboutRepo').textContent);
   ok('repo href correct', q('#aboutRepo').href === 'https://github.com/PointerNexus/Image2CAD', q('#aboutRepo').href);

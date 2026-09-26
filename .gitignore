@@ -11,8 +11,9 @@ publish/
 node_modules/
 npm-debug.log*
 
-# Generated instrumented test pages (make-*.mjs writes these)
+# Generated instrumented test pages (make-*.mjs, about-probe.mjs write these)
 *-page.html
+about-probe.html
 
 # Generated icon preview
 packaging/icon.png

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Repository** | https://github.com/PointerNexus/Image2CAD |
-| **Version** | 0.1.0 |
+| **Version** | 0.2.0 |
 | **Author** | PointerNexus |
 | **Licence** | not yet declared |
 
