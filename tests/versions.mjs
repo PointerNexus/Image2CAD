@@ -93,6 +93,33 @@ for (const m of readme.matchAll(/\]\((?!https?:|#)([^)]+)\)/g)) {
   check('README file link ' + m[1] + ' exists', existsSync(p));
 }
 
+// Licence state has to agree across the file, the README and the badge, because
+// "no licence" and "MIT" mean very different things to someone reading the repo.
+const licencePath = new URL('../LICENSE', import.meta.url);
+check('LICENSE file exists', existsSync(licencePath));
+if (existsSync(licencePath)) {
+  const lic = readFileSync(licencePath, 'utf8');
+  const kind = /MIT License/.test(lic) ? 'MIT'
+    : /Apache License/.test(lic) ? 'Apache'
+    : /GNU AFFERO/.test(lic) ? 'AGPL'
+    : /GNU GENERAL PUBLIC LICENSE[\s\S]{0,40}Version 3/.test(lic) ? 'GPL-3.0'
+    : 'unknown';
+  check('LICENSE is a recognised licence', kind !== 'unknown', 'first line: ' + lic.split('\n')[0]);
+  check('LICENSE names the copyright holder', /Copyright \(c\) \d{4}\s+\S/.test(lic),
+    'no "Copyright (c) <year> <holder>" line');
+  check('LICENSE year matches the current year',
+    new RegExp('Copyright \\(c\\) ' + new Date().getFullYear()).test(lic),
+    'expected ' + new Date().getFullYear() + ', got: ' + (lic.match(/Copyright \(c\) [\d-]+/) || ['?'])[0]);
+
+  const row = readme.match(/\|\s*\*\*Licence\*\*\s*\|\s*([^|]+?)\s*\|/);
+  check('README licence row matches LICENSE', !!row && row[1].includes(kind),
+    'README=' + (row && row[1]) + ' LICENSE=' + kind);
+  check('README badge shows the licence',
+    new RegExp('licence-' + kind, 'i').test(readme), 'no badge reading licence-' + kind);
+  check('README no longer claims no licence', !/not yet declared|not yet been declared/i.test(readme));
+  check('README licence section links the file', /\]\(LICENSE\)/.test(readme));
+}
+
 if (failed) {
   console.log('\nFAILURES ' + failed + ' failed');
   process.exit(1);

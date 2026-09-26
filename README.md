@@ -20,7 +20,7 @@
   <img alt="single HTML file" src="https://img.shields.io/badge/one_HTML_file-8b5cf6?style=flat-square">
   <img alt="no dependencies" src="https://img.shields.io/badge/dependencies-none-16a34a?style=flat-square">
   <img alt="offline capable" src="https://img.shields.io/badge/offline-22c55e?style=flat-square">
-  <img alt="licence not yet declared" src="https://img.shields.io/badge/licence-not%20yet%20declared-eab308?style=flat-square">
+  <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-10b981?style=flat-square">
 </p>
 
 ---
@@ -52,7 +52,7 @@ install, no dependencies, works offline.
 | **Version** | 0.2.0 |
 | **Author** | PointerNexus |
 | **Repository** | <https://github.com/PointerNexus/Image2CAD> |
-| **Licence** | not yet declared |
+| **Licence** | [MIT](LICENSE) |
 
 ## 为什么是中心线
 
@@ -179,5 +179,8 @@ tests/                  Node 测试脚本，零依赖
 
 ## 许可
 
-目前还没有 LICENSE 文件，也就是默认的「保留所有权利」。你要是想用，加一个就行 ——
-这类工具通常选 MIT。
+[MIT](LICENSE) &mdash; 别人可以随便用、随便改、包括拿去商用和二次分发，唯一的要求是
+在副本里保留这份版权声明。
+
+换句话说，别人可以把你这个工具嵌进他自己的商业软件里，也可以 fork 了一份自己改，这都
+没问题。
