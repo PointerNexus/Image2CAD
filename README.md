@@ -1,5 +1,12 @@
 # Image2CAD
 
+| | |
+|---|---|
+| **Repository** | https://github.com/PointerNexus/Image2CAD |
+| **Version** | 0.1.0 |
+| **Author** | PointerNexus |
+| **Licence** | not yet declared |
+
 Turn a raster picture into editable CAD geometry. Point it at a PNG or JPG and
 it emits DXF/SCR containing `LINE`, `ARC`, `CIRCLE` and `PLINE` entities —
 outer contours, interior detail, and the **centre line** of thick strokes.
@@ -112,4 +119,4 @@ tests/                  Node test scripts, no dependencies
 
 ## Licence
 
-No licence file yet — see the note in the repository description.
+No licence file yet — see the About table at the top.
