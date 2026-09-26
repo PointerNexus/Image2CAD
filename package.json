@@ -1,0 +1,20 @@
+{
+  "name": "image2cad",
+  "version": "0.1.0",
+  "description": "Convert raster images to CAD geometry (LINE/ARC/CIRCLE/PLINE) with centre-line recovery for thick strokes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/core.test.mjs",
+    "test:diag": "node tests/dbg-diag.mjs",
+    "test:fit": "node tests/dbg-fit.mjs",
+    "test:gap": "node tests/dbg-gap.mjs",
+    "test:dt": "node tests/dbg-dt.mjs",
+    "test:line": "node tests/dbg-line.mjs",
+    "test:all": "node tests/dbg-diag.mjs && node tests/dbg-dt.mjs && node tests/dbg-fit.mjs && node tests/dbg-gap.mjs && node tests/core.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,1761 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>图片转 CAD 指令</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#f7f8fa;color:#111827;font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.app{max-width:1280px;margin:0 auto;padding:22px 20px 44px}
+header{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;flex-wrap:wrap}
+h1{font-size:17px;font-weight:600;margin:0;letter-spacing:.2px}
+.sub{font-size:12.5px;color:#6b7280}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 294px;gap:14px;align-items:start}
+.preview{position:relative;overflow:hidden}
+#view{display:block;width:100%;height:580px;background:#fcfcfd;cursor:grab}
+#view.drag{cursor:grabbing}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px}
+.drop{width:100%;height:100%;border:1.5px dashed #d1d5db;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6b7280;background:#fff;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:#9ca3af;background:#f9fafb}
+.drop .big{font-size:14px;color:#374151}
+.drop .small{font-size:12.5px}
+.tools{position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:8px}
+.tools .meta{font-size:12px;color:#6b7280;margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{border:1px solid #d1d5db;background:#fff;color:#111827;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;transition:background .12s,border-color .12s}
+.btn:hover:not(:disabled){background:#f3f4f6}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:#111827;border-color:#111827;color:#fff}
+.btn.primary:hover:not(:disabled){background:#374151;border-color:#374151}
+.seg{display:inline-flex;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;color:#6b7280;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+.seg button+button{border-left:1px solid #e5e7eb}
+.seg button.on{background:#111827;color:#fff}
+.controls{overflow:hidden}
+.group{padding:12px 15px;border-bottom:1px solid #f1f2f4}
+.group:last-child{border-bottom:0}
+.gtitle{font-size:11.5px;font-weight:600;color:#9ca3af;letter-spacing:.6px;margin-bottom:9px}
+.row{margin-bottom:9px}
+.row:last-child{margin-bottom:0}
+.rhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.rhead label{font-size:12.5px;color:#374151}
+.val{font-size:12px;color:#6b7280;font-variant-numeric:tabular-nums}
+.val input{width:74px;border:1px solid #e5e7eb;border-radius:4px;padding:2px 5px;font:inherit;font-size:12px;text-align:right;color:#111827;background:#fff}
+.val input:focus{outline:none;border-color:#9ca3af}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer;display:block}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:#e5e7eb;border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:#e5e7eb;border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#fff;border:1.5px solid #6b7280;margin-top:-5px}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:1.5px solid #6b7280}
+input[type=range]:disabled{opacity:.45;cursor:not-allowed}
+select{border:1px solid #e5e7eb;border-radius:5px;padding:4px 6px;font:inherit;font-size:12.5px;background:#fff;color:#111827;width:100%}
+.check{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#374151;cursor:pointer;margin-bottom:8px;user-select:none}
+.check:last-child{margin-bottom:0}
+.check input{width:14px;height:14px;margin:0;accent-color:#111827;cursor:pointer}
+.output{margin-top:14px;padding:13px 15px 15px}
+.ohead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.stats{font-size:12.5px;color:#6b7280;font-variant-numeric:tabular-nums}
+.stats b{color:#111827;font-weight:600}
+.acts{display:flex;gap:8px}
+#out{width:100%;height:208px;resize:vertical;border:1px solid #e5e7eb;border-radius:6px;background:#fafbfc;padding:11px 12px;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;color:#1f2937;white-space:pre;overflow:auto;display:block}
+#out:focus{outline:none;border-color:#9ca3af}
+.warn{margin-top:8px;font-size:12px;color:#b45309;display:none}
+.warn.show{display:block}
+@media (min-width:901px){
+  .controls{max-height:582px;overflow-y:auto;overscroll-behavior:contain}
+  .controls::-webkit-scrollbar{width:8px}
+  .controls::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
+  .controls::-webkit-scrollbar-track{background:transparent}
+}
+@media (max-width:900px){
+  .main{grid-template-columns:1fr}
+  #view{height:380px}
+  .app{padding:16px 12px 32px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>图片转 CAD 指令</h1>
+    <span class="sub">导入图片 → 提取中心线与轮廓 → 复制指令到 CAD 命令行</span>
+  </header>
+
+  <div class="main">
+    <div class="card preview">
+      <canvas id="view"></canvas>
+      <div class="empty" id="empty"><div class="drop" id="drop">
+        <div class="big">拖入图片，或点击这里选择</div>
+        <div class="small">也可以直接 Ctrl + V 粘贴截图</div>
+      </div></div>
+      <div class="tools">
+        <input type="file" id="file" accept="image/*" hidden>
+        <button class="btn" id="pick">选择图片</button>
+        <div class="seg" id="segBg">
+          <button data-v="0" class="on">原图</button>
+          <button data-v="1">二值图</button>
+          <button data-v="2">无底图</button>
+        </div>
+        <span class="meta" id="imgMeta"></span>
+      </div>
+    </div>
+
+    <div class="card controls">
+      <div class="group">
+        <div class="gtitle">识别</div>
+        <div class="row">
+          <div class="rhead"><label for="res">处理精度</label></div>
+          <select id="res">
+            <option value="600">600 px（最快）</option>
+            <option value="1000" selected>1000 px（推荐）</option>
+            <option value="1400">1400 px（更细）</option>
+            <option value="2000">2000 px（最细）</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="check"><input type="checkbox" id="autoTh" checked><span>阈值自动计算（Otsu）</span></div>
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="th">二值化阈值</label><span class="val" id="thV">—</span></div>
+          <input type="range" id="th" min="1" max="254" value="128" disabled>
+        </div>
+        <div class="row">
+          <div class="check"><input type="checkbox" id="inv"><span>浅色为墨（反色）</span></div>
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="blur">降噪模糊半径</label><span class="val" id="blurV">0</span></div>
+          <input type="range" id="blur" min="0" max="4" step="1" value="1">
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="morph">形态学修整</label></div>
+          <select id="morph">
+            <option value="0">不处理</option>
+            <option value="1" selected>闭运算（补线条断点）</option>
+            <option value="2">开运算（去杂点）</option>
+            <option value="3">闭 + 开</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="gtitle">轮廓</div>
+        <div class="row">
+          <div class="rhead"><label for="minArea">最小面积</label><span class="val" id="minAreaV">24 px²</span></div>
+          <input type="range" id="minArea" min="0" max="600" step="1" value="24">
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="eps">拟合容差（越小越贴合）</label><span class="val" id="epsV">1 px</span></div>
+          <input type="range" id="eps" min="0.2" max="6" step="0.1" value="1">
+        </div>
+        <div class="row">
+          <div class="check"><input type="checkbox" id="holes" checked><span>包含内部轮廓（眼睛、花纹等）</span></div>
+          <div class="check"><input type="checkbox" id="outerOnly"><span>只要最外层轮廓</span></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="gtitle">图元</div>
+        <div class="row">
+          <div class="rhead"><label for="mode">输出方式</label></div>
+          <select id="mode">
+            <option value="prim" selected>直线 LINE + 圆弧 ARC（推荐）</option>
+            <option value="pline">多段线 PLINE（忠实轮廓）</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="thin">线条取中心线（宽度 ≤）</label><span class="val" id="thinV">6 px</span></div>
+          <input type="range" id="thin" min="0" max="24" step="1" value="12">
+        </div>
+        <div class="row">
+          <div class="check"><input type="checkbox" id="circle" checked><span>整圆识别为 CIRCLE</span></div>
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="ctol">圆拟合容差</label><span class="val" id="ctolV">3%</span></div>
+          <input type="range" id="ctol" min="0.5" max="10" step="0.5" value="3">
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="gtitle">输出</div>
+        <div class="row">
+          <div class="rhead"><label for="scale">缩放</label><span class="val"><input type="number" id="scale" value="0.5" min="0.0001" step="0.01"><span id="unitTxt"> mm/px</span></span></div>
+        </div>
+        <div class="row">
+          <div class="rhead"><label for="unit">单位</label></div>
+          <select id="unit">
+            <option value="4" selected>毫米</option>
+            <option value="1">英寸</option>
+            <option value="0">无单位</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="check"><input type="checkbox" id="prefix" checked><span>命令加英文前缀 _</span></div>
+          <div class="check"><input type="checkbox" id="insu" checked><span>开头插入单位设置</span></div>
+          <div class="check"><input type="checkbox" id="zoom" checked><span>末尾自动缩放显示</span></div>
+          <div class="check"><input type="checkbox" id="revHole"><span>反转内孔方向</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card output">
+    <div class="ohead">
+      <div class="stats" id="stats">尚未导入图片</div>
+      <div class="acts">
+        <button class="btn primary" id="copy" disabled>复制指令</button>
+        <button class="btn" id="scr" disabled>下载 .scr</button>
+        <button class="btn" id="txt" disabled>下载 .txt</button>
+      </div>
+    </div>
+    <textarea id="out" readonly spellcheck="false" placeholder="CAD 指令会显示在这里：全选复制 → 粘贴到 CAD 命令行 → 按空格 / 回车即可绘制"></textarea>
+    <div class="warn" id="warn"></div>
+  </div>
+</div>
+
+<script id="core">
+var DX = [1, 0, -1, 0];
+var DY = [0, 1, 0, -1];
+var TRANS = [];
+TRANS[0] = [];
+TRANS[8] = [[1, 2]];
+TRANS[4] = [[2, 3]];
+TRANS[2] = [[3, 0]];
+TRANS[1] = [[0, 1]];
+TRANS[12] = [[2, 2]];
+TRANS[9] = [[1, 1]];
+TRANS[6] = [[3, 3]];
+TRANS[3] = [[0, 0]];
+TRANS[10] = [[1, 2], [3, 0]];
+TRANS[5] = [[2, 3], [0, 1]];
+TRANS[14] = [[3, 2]];
+TRANS[13] = [[2, 1]];
+TRANS[11] = [[1, 0]];
+TRANS[7] = [[0, 3]];
+TRANS[15] = [];
+
+function solve3(A, b) {
+  var m = [[A[0][0], A[0][1], A[0][2], b[0]], [A[1][0], A[1][1], A[1][2], b[1]], [A[2][0], A[2][1], A[2][2], b[2]]];
+  var i, r, j, k, t, f, s;
+  for (i = 0; i < 3; i++) {
+    var p = i;
+    for (r = i + 1; r < 3; r++) if (Math.abs(m[r][i]) > Math.abs(m[p][i])) p = r;
+    if (Math.abs(m[p][i]) < 1e-12) return null;
+    t = m[i]; m[i] = m[p]; m[p] = t;
+    for (j = i + 1; j < 3; j++) {
+      f = m[j][i] / m[i][i];
+      for (k = i; k < 4; k++) m[j][k] -= f * m[i][k];
+    }
+  }
+  var x = [0, 0, 0];
+  for (i = 2; i >= 0; i--) {
+    s = m[i][3];
+    for (k = i + 1; k < 3; k++) s -= m[i][k] * x[k];
+    x[i] = s / m[i][i];
+  }
+  return x;
+}
+
+function toGray(data, n, invert) {
+  var g = new Uint8ClampedArray(n);
+  for (var i = 0; i < n; i++) {
+    var o = i << 2;
+    var a = data[o + 3] / 255;
+    var r = data[o] * a + 255 * (1 - a);
+    var q = data[o + 1] * a + 255 * (1 - a);
+    var b = data[o + 2] * a + 255 * (1 - a);
+    var v = 0.299 * r + 0.587 * q + 0.114 * b;
+    g[i] = invert ? 255 - v : v;
+  }
+  return g;
+}
+
+function boxBlur(src, w, h, r) {
+  if (r < 1) return src;
+  var tmp = new Float32Array(w * h);
+  var out = new Uint8ClampedArray(w * h);
+  var d = r * 2 + 1;
+  var y, x, i, row, sum, sum2;
+  for (y = 0; y < h; y++) {
+    row = y * w;
+    sum = 0;
+    for (i = -r; i <= r; i++) sum += src[row + Math.min(w - 1, Math.max(0, i))];
+    for (x = 0; x < w; x++) {
+      tmp[row + x] = sum / d;
+      sum -= src[row + Math.min(w - 1, Math.max(0, x - r))];
+      sum += src[row + Math.min(w - 1, Math.max(0, x + r + 1))];
+    }
+  }
+  for (x = 0; x < w; x++) {
+    sum2 = 0;
+    for (i = -r; i <= r; i++) sum2 += tmp[Math.min(h - 1, Math.max(0, i)) * w + x];
+    for (y = 0; y < h; y++) {
+      out[y * w + x] = sum2 / d;
+      sum2 -= tmp[Math.min(h - 1, Math.max(0, y - r)) * w + x];
+      sum2 += tmp[Math.min(h - 1, Math.max(0, y + r + 1)) * w + x];
+    }
+  }
+  return out;
+}
+
+function otsu(gray) {
+  var hist = new Float64Array(256), i;
+  for (i = 0; i < gray.length; i++) hist[gray[i]]++;
+  var total = gray.length, sum = 0;
+  for (i = 0; i < 256; i++) sum += i * hist[i];
+  var sumB = 0, wB = 0, best = -1, thr = -1;
+  for (i = 0; i < 256; i++) {
+    wB += hist[i];
+    if (wB === 0) continue;
+    var wF = total - wB;
+    if (wF === 0) break;
+    sumB += i * hist[i];
+    var mB = sumB / wB, mF = (sum - sumB) / wF;
+    var between = wB * wF * (mB - mF) * (mB - mF);
+    // A split is only meaningful if both classes carry a real share of the
+    // image. Without this guard a thin-line scan (a few dark pixels in a huge
+    // white field) maximizes variance at the very first bin and yields thr=1,
+    // which erases the line instead of segmenting it.
+    var frac = wB / total;
+    if (frac < 0.0005 || frac > 0.9995) continue;
+    if (between > best) { best = between; thr = i; }
+  }
+  if (thr < 0) {
+    // No usable bimodality (flat or near-uniform image): fall back to the mean.
+    thr = Math.round(sum / total);
+  }
+  return Math.min(254, Math.max(1, thr));
+}
+
+function binarize(gray, thr) {
+  var n = gray.length, bin = new Uint8Array(n);
+  // Threshold landing exactly on the foreground level would drop a thin line
+  // entirely (every pixel compares equal). Nudge onto the darker side of the
+  // histogram bin so borderline strokes survive.
+  var t = thr;
+  if (t > 0 && t < 255) {
+    var atOrAbove = 0;
+    for (var k = 0; k < n; k += 97) if (gray[k] >= t) atOrAbove++;
+    var below = 0;
+    for (var k2 = 0; k2 < n; k2 += 97) if (gray[k2] < t) below++;
+    // if nothing would be marked, include the equal-valued pixels
+    if (below === 0) t = t + 1;
+  }
+  for (var i = 0; i < n; i++) bin[i] = gray[i] < t ? 1 : 0;
+  return bin;
+}
+
+function morph(bin, w, h, mode) {
+  function pass(src, horizontal, dilate) {
+    var out = new Uint8Array(w * h);
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var v = horizontal ? src[y * w + x] : src[x * w + y];
+        var a = horizontal ? src[y * w + Math.max(0, x - 1)] : src[Math.max(0, x - 1) * w + y];
+        var b = horizontal ? src[y * w + Math.min(w - 1, x + 1)] : src[Math.min(w - 1, x + 1) * w + y];
+        out[horizontal ? y * w + x : x * w + y] = dilate ? (v || a || b ? 1 : 0) : (v && a && b ? 1 : 0);
+      }
+    }
+    return out;
+  }
+  function dilate(src) { return pass(pass(src, true, true), false, true); }
+  function erode(src) { return pass(pass(src, true, false), false, false); }
+  var r = bin;
+  if (mode === 1 || mode === 3) r = erode(dilate(r));
+  if (mode === 2 || mode === 3) r = dilate(erode(r));
+  return r;
+}
+
+function traceContours(bin, w, h) {
+  var vw = w + 1;
+  var size = vw * (h + 1) * 4;
+  var next = new Int8Array(size);
+  next.fill(-1);
+  var starts = [];
+  var x, y, a, b, c, d, t, k, base, sx, sy;
+  for (y = 0; y <= h; y++) {
+    for (x = 0; x <= w; x++) {
+      a = (x > 0 && y > 0) ? bin[(y - 1) * w + x - 1] : 0;
+      b = (x < w && y > 0) ? bin[(y - 1) * w + x] : 0;
+      c = (x < w && y < h) ? bin[y * w + x] : 0;
+      d = (x > 0 && y < h) ? bin[y * w + x - 1] : 0;
+      t = TRANS[a * 8 + b * 4 + c * 2 + d];
+      if (!t) continue;
+      base = (y * vw + x) * 4;
+      for (k = 0; k < t.length; k++) {
+        next[base + t[k][0]] = t[k][1];
+        sx = x - DX[t[k][0]];
+        sy = y - DY[t[k][0]];
+        starts.push((sy * vw + sx) * 4 + t[k][0]);
+      }
+    }
+  }
+  var used = new Uint8Array(size);
+  var loops = [];
+  for (var si = 0; si < starts.length; si++) {
+    var s = starts[si];
+    if (used[s]) continue;
+    var cell = s >> 2;
+    var y0 = (cell / vw) | 0;
+    var x0 = cell - y0 * vw;
+    var d0 = s & 3;
+    var pts = [x0, y0];
+    var px = x0, py = y0, pd = d0;
+    used[s] = 1;
+    var guard = size + 16;
+    while (guard-- > 0) {
+      px += DX[pd];
+      py += DY[pd];
+      if (px === x0 && py === y0) break;
+      pts.push(px, py);
+      var e = (py * vw + px) * 4 + pd;
+      var nd = next[e];
+      if (nd < 0) break;
+      var nk = (py * vw + px) * 4 + nd;
+      if (used[nk]) break;
+      used[nk] = 1;
+      pd = nd;
+    }
+    if (pts.length >= 6) loops.push(pts);
+  }
+  return loops;
+}
+
+function signedArea(p) {
+  var n = p.length >> 1, s = 0;
+  for (var i = 0, j = n - 1; i < n; j = i++) {
+    s += (p[j * 2] - p[i * 2]) * (p[j * 2 + 1] + p[i * 2 + 1]);
+  }
+  return s / 2;
+}
+
+function bbox(p) {
+  var n = p.length >> 1;
+  var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (var i = 0; i < n; i++) {
+    var x = p[i * 2], y = p[i * 2 + 1];
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  return [x0, y0, x1, y1];
+}
+
+function dropCollinear(p) {
+  var n = p.length >> 1;
+  if (n < 4) return p;
+  var out = [];
+  for (var i = 0; i < n; i++) {
+    var q = (i - 1 + n) % n, r = (i + 1) % n;
+    var ax = p[i * 2] - p[q * 2], ay = p[i * 2 + 1] - p[q * 2 + 1];
+    var bx = p[r * 2] - p[q * 2], by = p[r * 2 + 1] - p[q * 2 + 1];
+    if (ax * by - ay * bx !== 0) out.push(p[i * 2], p[i * 2 + 1]);
+  }
+  return out.length >= 6 ? out : p;
+}
+
+// Rasterized contours carry 1px stair-steps at every corner (the Moore crack
+// follower bevels each corner pixel). Left in place they explode a plain
+// rectangle into extra primitives. Collapse any vertex whose two adjacent edges
+// are both pixel-scale: such a vertex only records the pixel grid, not shape.
+function rdpRange(p, a, b, eps) {
+  if (b <= a) return [p[a * 2], p[a * 2 + 1]];
+  var n = p.length >> 1;
+  var keep = new Uint8Array(n);
+  keep[a] = 1;
+  keep[b] = 1;
+  var st = [a, b];
+  while (st.length) {
+    var hi = st.pop(), lo = st.pop();
+    if (hi <= lo + 1) continue;
+    var ax = p[lo * 2], ay = p[lo * 2 + 1];
+    var dx = p[hi * 2] - ax, dy = p[hi * 2 + 1] - ay;
+    var l2 = dx * dx + dy * dy, md = -1, mi = -1;
+    for (var i = lo + 1; i < hi; i++) {
+      var qx = p[i * 2] - ax, qy = p[i * 2 + 1] - ay, dd;
+      if (l2 === 0) {
+        dd = Math.sqrt(qx * qx + qy * qy);
+      } else {
+        var tt = (qx * dx + qy * dy) / l2;
+        tt = tt < 0 ? 0 : tt > 1 ? 1 : tt;
+        var ex = qx - tt * dx, ey = qy - tt * dy;
+        dd = Math.sqrt(ex * ex + ey * ey);
+      }
+      if (dd > md) { md = dd; mi = i; }
+    }
+    if (mi > 0 && md > eps) {
+      keep[mi] = 1;
+      st.push(lo, mi, mi, hi);
+    }
+  }
+  var out = [];
+  for (var j = a; j <= b; j++) if (keep[j]) out.push(p[j * 2], p[j * 2 + 1]);
+  return out;
+}
+
+function simplifyClosed(p, eps) {
+  var n = p.length >> 1;
+  if (n < 4) return p;
+  var m = 1, best = -1;
+  for (var i = 1; i < n; i++) {
+    var dx = p[i * 2] - p[0], dy = p[i * 2 + 1] - p[1];
+    var dd = dx * dx + dy * dy;
+    if (dd > best) { best = dd; m = i; }
+  }
+  var a = rdpRange(p, 0, m, eps);
+  var b = rdpRange(p, m, n - 1, eps);
+  var out = a.slice();
+  for (var j = 2; j < b.length; j += 2) out.push(b[j], b[j + 1]);
+  return out.length >= 6 ? out : p;
+}
+
+function mergeSegments(p, closed, tolDeg) {
+  var n = p.length >> 1;
+  if (n < 2) return [];
+  var src = p;
+  if (closed) {
+    src = p.slice();
+    src.push(p[0], p[1]);
+  }
+  var m = src.length >> 1;
+  var segs = [];
+  var start = 0;
+  for (var i = 1; i < m; i++) {
+    if (i < m - 1) {
+      var ax = src[i * 2] - src[(i - 1) * 2], ay = src[i * 2 + 1] - src[(i - 1) * 2 + 1];
+      var bx = src[(i + 1) * 2] - src[i * 2], by = src[(i + 1) * 2 + 1] - src[i * 2 + 1];
+      var la = Math.sqrt(ax * ax + ay * ay), lb = Math.sqrt(bx * bx + by * by);
+      if (la > 1e-9 && lb > 1e-9) {
+        var cosv = (ax * bx + ay * by) / (la * lb);
+        if (cosv > 1) cosv = 1;
+        if (cosv < -1) cosv = -1;
+        if (Math.acos(cosv) * 180 / Math.PI <= tolDeg) continue;
+      }
+    }
+    segs.push([src[start * 2], src[start * 2 + 1], src[i * 2], src[i * 2 + 1]]);
+    start = i;
+  }
+  return segs;
+}
+
+function fitCircle(p) {
+  var n = p.length >> 1;
+  if (n < 8) return null;
+  var sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0;
+  for (var i = 0; i < n; i++) {
+    var x = p[i * 2], y = p[i * 2 + 1], z = x * x + y * y;
+    sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sxz += x * z; syz += y * z; sz += z;
+  }
+  var sol = solve3([[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]], [sxz, syz, sz]);
+  if (!sol) return null;
+  var cx = sol[0] / 2, cy = sol[1] / 2;
+  var rr = sol[2] + (sol[0] * sol[0] + sol[1] * sol[1]) / 4;
+  if (rr <= 0) return null;
+  var r = Math.sqrt(rr);
+  for (var it = 0; it < 6; it++) {
+    var j11 = 0, j12 = 0, j13 = 0, j22 = 0, j23 = 0, j33 = 0, f1 = 0, f2 = 0, f3 = 0, bad = false;
+    for (var k = 0; k < n; k++) {
+      var dx = p[k * 2] - cx, dy = p[k * 2 + 1] - cy;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 1e-9) { bad = true; break; }
+      var a1 = dx / d, a2 = dy / d, a3 = -1, fi = d - r;
+      j11 += a1 * a1; j12 += a1 * a2; j13 += a1 * a3;
+      j22 += a2 * a2; j23 += a2 * a3; j33 += a3 * a3;
+      f1 += a1 * fi; f2 += a2 * fi; f3 += a3 * fi;
+    }
+    if (bad) break;
+    var ds = solve3([[j11, j12, j13], [j12, j22, j23], [j13, j23, j33]], [-f1, -f2, -f3]);
+    if (!ds) break;
+    cx += ds[0]; cy += ds[1]; r += ds[2];
+    if (r <= 0) return null;
+  }
+  var ss = 0;
+  var angs = [];
+  for (var m = 0; m < n; m++) {
+    var ex = p[m * 2] - cx, ey = p[m * 2 + 1] - cy;
+    var dist = Math.sqrt(ex * ex + ey * ey);
+    ss += (dist - r) * (dist - r);
+    angs.push(Math.atan2(ey, ex));
+  }
+  angs.sort(function (u, v) { return u - v; });
+  var maxGap = 0;
+  for (var q = 1; q < angs.length; q++) maxGap = Math.max(maxGap, angs[q] - angs[q - 1]);
+  maxGap = Math.max(maxGap, Math.PI * 2 - (angs[angs.length - 1] - angs[0]));
+  return { cx: cx, cy: cy, r: r, rms: Math.sqrt(ss / n), maxGap: maxGap };
+}
+
+function caliperWidths(p) {
+  var n = p.length >> 1;
+  if (n < 3) return null;
+  var pts = new Array(n);
+  for (var i = 0; i < n; i++) pts[i] = [p[i * 2], p[i * 2 + 1]];
+  pts.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+  var h = [];
+  function half(src) {
+    var st = [];
+    for (var i = 0; i < src.length; i++) {
+      var q = src[i];
+      while (st.length >= 2) {
+        var a = st[st.length - 2], b = st[st.length - 1];
+        if ((b[0] - a[0]) * (q[1] - a[1]) - (b[1] - a[1]) * (q[0] - a[0]) <= 0) st.pop();
+        else break;
+      }
+      st.push(q);
+    }
+    st.pop();
+    return st;
+  }
+  h = half(pts);
+  var lower = half(pts.slice().reverse());
+  h = h.concat(lower);
+  var m = h.length;
+  if (m < 3) return null;
+  if (m > 72) {
+    var step = m / 72, red = [];
+    for (var q2 = 0; q2 < 72; q2++) {
+      var t = h[Math.min(m - 1, Math.floor(q2 * step))];
+      red.push(t);
+    }
+    h = red;
+    m = h.length;
+  }
+  var wmin = Infinity, wmax = 0, e, f, ax, ay, L, mx, my, d, k, dmax;
+  for (e = 0; e < m; e++) {
+    f = (e + 1) % m;
+    ax = h[f][0] - h[e][0];
+    ay = h[f][1] - h[e][1];
+    L = Math.sqrt(ax * ax + ay * ay);
+    if (L < 1e-9) continue;
+    mx = -h[e][0] * ay + h[e][1] * ax;
+    my = 0;
+    dmax = -Infinity;
+    for (k = 0; k < m; k++) {
+      d = -h[k][0] * ay + h[k][1] * ax - mx;
+      if (d > dmax) dmax = d;
+    }
+    d = dmax / L;
+    if (d < wmin) wmin = d;
+    if (d > wmax) wmax = d;
+  }
+  if (!isFinite(wmin)) return null;
+  return [wmin, wmax];
+}
+
+function insetRadius(pw, ph, data) {
+  var n = pw * ph, INF = 1e9, SQ2 = Math.SQRT2;
+  var d = new Float32Array(n), i, y, x, o, best, v;
+  for (i = 0; i < n; i++) d[i] = data[i] ? INF : 0;
+  for (y = 0; y < ph; y++) {
+    for (x = 0; x < pw; x++) {
+      o = y * pw + x;
+      best = d[o];
+      if (best === 0) continue;
+      if (y > 0) {
+        v = d[o - pw] + 1; if (v < best) best = v;
+        if (x > 0) { v = d[o - pw - 1] + SQ2; if (v < best) best = v; }
+        if (x < pw - 1) { v = d[o - pw + 1] + SQ2; if (v < best) best = v; }
+      }
+      if (x > 0) { v = d[o - 1] + 1; if (v < best) best = v; }
+      d[o] = best;
+    }
+  }
+  for (y = ph - 1; y >= 0; y--) {
+    for (x = pw - 1; x >= 0; x--) {
+      o = y * pw + x;
+      best = d[o];
+      if (best === 0) continue;
+      if (y < ph - 1) {
+        v = d[o + pw] + 1; if (v < best) best = v;
+        if (x > 0) { v = d[o + pw - 1] + SQ2; if (v < best) best = v; }
+        if (x < pw - 1) { v = d[o + pw + 1] + SQ2; if (v < best) best = v; }
+      }
+      if (x < pw - 1) { v = d[o + 1] + 1; if (v < best) best = v; }
+      d[o] = best;
+    }
+  }
+  var mx = 0;
+  for (i = 0; i < n; i++) if (d[i] > mx && d[i] < INF) mx = d[i];
+  return mx;
+}
+
+function loopIsThin(pts, thinW) {
+  if (!(thinW > 0)) return false;
+  var cw = caliperWidths(pts);
+  if (!cw) return false;
+  if (cw[0] > thinW * 8) return false;
+  var patch = rasterizeLoop(pts);
+  if (!patch || patch.w < 3 || patch.h < 3) return false;
+  if (patch.w * patch.h > 4000000) return false;
+  var D = insetRadius(patch.w, patch.h, patch.data);
+  if (2 * D > thinW * 1.4) return false;
+  if (cw[1] < 5 * D) return false;
+  return true;
+}
+
+function rasterizeLoop(loop) {
+  var bb = bbox(loop);
+  var ox = Math.round(bb[0]), oy = Math.round(bb[1]);
+  var w = Math.max(1, Math.round(bb[2]) - ox + 1);
+  var h = Math.max(1, Math.round(bb[3]) - oy + 1);
+  var data = new Uint8Array((w + 2) * (h + 2));
+  var n = loop.length >> 1;
+  var PW = w + 2;
+  for (var y = 0; y < h; y++) {
+    var gy = y + 0.5;
+    var xs = [];
+    for (var i = 0, j = n - 1; i < n; j = i++) {
+      var y0 = loop[j * 2 + 1] - oy, y1 = loop[i * 2 + 1] - oy;
+      if ((y0 <= gy) === (y1 <= gy)) continue;
+      xs.push(loop[j * 2] - ox + (gy - y0) / (y1 - y0) * (loop[i * 2] - loop[j * 2]));
+    }
+    if (xs.length < 2) continue;
+    xs.sort(function (a, b) { return a - b; });
+    for (var k = 0; k + 1 < xs.length; k += 2) {
+      var x0 = Math.max(0, Math.ceil(xs[k] - 0.5));
+      var x1 = Math.min(w - 1, Math.floor(xs[k + 1] - 0.5));
+      for (var x = x0; x <= x1; x++) data[(y + 1) * PW + (x + 1)] = 1;
+    }
+  }
+  return { w: PW, h: h + 2, ox: ox - 1, oy: oy - 1, data: data };
+}
+
+function polyLength(p) {
+  var n = p.length >> 1, s = 0;
+  for (var i = 0; i + 3 < p.length; i += 2) {
+    var dx = p[i + 2] - p[i], dy = p[i + 3] - p[i + 1];
+    s += Math.sqrt(dx * dx + dy * dy);
+  }
+  if (n > 1) {
+    var ex = p[n * 2 - 2] - p[0], ey = p[n * 2 - 1] - p[1];
+    s += Math.sqrt(ex * ex + ey * ey);
+  }
+  return s;
+}
+
+function resampleClosed(p, n) {
+  var m = p.length >> 1;
+  if (m < 3) return null;
+  var seg = new Float64Array(m), total = 0, i;
+  for (i = 0; i < m; i++) {
+    var j = (i + 1) % m;
+    var dx = p[j * 2] - p[i * 2], dy = p[j * 2 + 1] - p[i * 2 + 1];
+    seg[i] = Math.sqrt(dx * dx + dy * dy);
+    total += seg[i];
+  }
+  if (!(total > 1e-6)) return null;
+  var out = new Array(n);
+  var k = 0, acc = 0, cur = seg[0];
+  for (i = 0; i < n; i++) {
+    var target = total * i / n;
+    while (acc + cur < target && k < m - 1) {
+      acc += cur;
+      k++;
+      cur = seg[k];
+    }
+    var t = cur > 1e-12 ? (target - acc) / cur : 0;
+    if (t < 0) t = 0;
+    if (t > 1) t = 1;
+    var a = k, b = (k + 1) % m;
+    out[i] = [p[a * 2] + (p[b * 2] - p[a * 2]) * t, p[a * 2 + 1] + (p[b * 2 + 1] - p[a * 2 + 1]) * t];
+  }
+  return out;
+}
+
+function distanceTransform(pw, ph, data) {
+  var n = pw * ph, INF = 1e9, SQ2 = Math.SQRT2;
+  var d = new Float32Array(n), i, y, x, o, best, v;
+  for (i = 0; i < n; i++) d[i] = data[i] ? INF : 0;
+  for (y = 0; y < ph; y++) {
+    for (x = 0; x < pw; x++) {
+      o = y * pw + x;
+      best = d[o];
+      if (best === 0) continue;
+      if (y > 0) {
+        v = d[o - pw] + 1; if (v < best) best = v;
+        if (x > 0) { v = d[o - pw - 1] + SQ2; if (v < best) best = v; }
+        if (x < pw - 1) { v = d[o - pw + 1] + SQ2; if (v < best) best = v; }
+      }
+      if (x > 0) { v = d[o - 1] + 1; if (v < best) best = v; }
+      d[o] = best;
+    }
+  }
+  for (y = ph - 1; y >= 0; y--) {
+    for (x = pw - 1; x >= 0; x--) {
+      o = y * pw + x;
+      best = d[o];
+      if (best === 0) continue;
+      if (y < ph - 1) {
+        v = d[o + pw] + 1; if (v < best) best = v;
+        if (x > 0) { v = d[o + pw - 1] + SQ2; if (v < best) best = v; }
+        if (x < pw - 1) { v = d[o + pw + 1] + SQ2; if (v < best) best = v; }
+      }
+      if (x < pw - 1) { v = d[o + 1] + 1; if (v < best) best = v; }
+      d[o] = best;
+    }
+  }
+  return d;
+}
+
+function insetRadius(pw, ph, data) {
+  var d = distanceTransform(pw, ph, data), mx = 0;
+  for (var i = 0; i < d.length; i++) if (d[i] > mx && d[i] < 1e9) mx = d[i];
+  return mx;
+}
+
+function strokeCenterline(loop, patch, dt, D) {
+  var m = loop.length >> 1;
+  if (m < 8) return null;
+  var w = patch.w, h = patch.h, i, p, q;
+  function march(sign) {
+    var out = new Float64Array(m * 2), ds = new Float64Array(m), sum = 0;
+    var span = Math.max(2, Math.round(D));
+    if (span > (m >> 2)) span = Math.max(2, m >> 2);
+    for (i = 0; i < m; i++) {
+      p = (i + span) % m;
+      q = (i - span + m) % m;
+      var lx = loop[i * 2] - patch.ox, ly = loop[i * 2 + 1] - patch.oy;
+      var tx = loop[p * 2] - loop[q * 2], ty = loop[p * 2 + 1] - loop[q * 2 + 1];
+      var L = Math.sqrt(tx * tx + ty * ty);
+      if (!(L > 1e-9)) L = 1;
+      var nx = -ty / L * sign, ny = tx / L * sign;
+      var last = -1, s, cx, cy, idx;
+      for (s = 0.125; s <= 64; s += 0.25) {
+        cx = Math.floor(lx + nx * s);
+        cy = Math.floor(ly + ny * s);
+        if (cx < 0 || cy < 0 || cx >= w || cy >= h) break;
+        idx = cy * w + cx;
+        if (!patch.data[idx]) break;
+        last = s;
+      }
+      var ch = last + 0.125;
+      out[i * 2] = lx + nx * ch / 2;
+      out[i * 2 + 1] = ly + ny * ch / 2;
+      ds[i] = ch;
+      sum += ch;
+    }
+    return { pts: out, hs: ds, mean: sum / m };
+  }
+  var A = march(1), B = march(-1);
+  var O = new Float64Array(m * 2), CH = new Float64Array(m);
+  for (i = 0; i < m; i++) {
+    var useA = A.hs[i] >= B.hs[i];
+    O[i * 2] = useA ? A.pts[i * 2] : B.pts[i * 2];
+    O[i * 2 + 1] = useA ? A.pts[i * 2 + 1] : B.pts[i * 2 + 1];
+    CH[i] = Math.max(A.hs[i], B.hs[i]);
+  }
+  var cum = new Float64Array(m), i2, dx, dy;
+  for (i2 = 1; i2 < m; i2++) {
+    dx = O[i2 * 2] - O[i2 * 2 - 2];
+    dy = O[i2 * 2 + 1] - O[i2 * 2 - 1];
+    cum[i2] = cum[i2 - 1] + Math.sqrt(dx * dx + dy * dy);
+  }
+  var total = cum[m - 1];
+  if (!(total > 1e-6)) return null;
+  var turns = [];
+  for (i2 = 4; i2 < m - 4; i2++) {
+    var ax = O[i2 * 2] - O[(i2 - 4) * 2], ay = O[i2 * 2 + 1] - O[(i2 - 4) * 2 + 1];
+    var bx = O[(i2 + 4) * 2] - O[(i2 + 2) * 2], by = O[(i2 + 4) * 2 + 1] - O[(i2 + 2) * 2 + 1];
+    var la = Math.sqrt(ax * ax + ay * ay), lb = Math.sqrt(bx * bx + by * by);
+    if (la > 1e-9 && lb > 1e-9 && (ax * bx + ay * by) / (la * lb) < -0.3 &&
+      (!turns.length || i2 - turns[turns.length - 1] > 4)) turns.push(i2);
+  }
+  function branchPts(f, g) {
+    var pts = [], cs = [], chs = [], idx, s = 0, i0 = f % m;
+    pts.push(O[i0 * 2], O[i0 * 2 + 1]);
+    cs.push(0);
+    chs.push(CH[i0]);
+    for (idx = f + 1; idx <= g; idx++) {
+      var ii = idx % m, ip = (idx - 1) % m;
+      var ex2 = O[ii * 2] - O[ip * 2], ey2 = O[ii * 2 + 1] - O[ip * 2 + 1];
+      s += Math.sqrt(ex2 * ex2 + ey2 * ey2);
+      pts.push(O[ii * 2], O[ii * 2 + 1]);
+      cs.push(s);
+      chs.push(CH[ii]);
+    }
+    return { pts: pts, cs: cs, chs: chs, len: s };
+  }
+  function sampleAt(B, s) {
+    var cs = B.cs, n = cs.length;
+    if (n < 2) return [B.pts[0], B.pts[1], 0];
+    if (s <= 0) return [B.pts[0], B.pts[1], 0];
+    if (s >= cs[n - 1]) return [B.pts[n * 2 - 2], B.pts[n * 2 - 1], n - 1];
+    var lo = 0, hi = n - 1;
+    while (lo < hi - 1) {
+      var mid = (lo + hi) >> 1;
+      if (cs[mid] <= s) lo = mid; else hi = mid;
+    }
+    var seg = cs[hi] - cs[lo];
+    var t = seg > 1e-12 ? (s - cs[lo]) / seg : 0;
+    if (t < 0) t = 0;
+    if (t > 1) t = 1;
+    return [B.pts[lo * 2] + (B.pts[hi * 2] - B.pts[lo * 2]) * t,
+      B.pts[lo * 2 + 1] + (B.pts[hi * 2 + 1] - B.pts[lo * 2 + 1]) * t, lo];
+  }
+  var brs = [], t, bf, bg, blen;
+  for (t = 0; t < turns.length; t++) {
+    bf = turns[t];
+    bg = t + 1 < turns.length ? turns[t + 1] : turns[0] + m;
+    blen = cum[bg % m] - cum[bf] + (bg >= m ? total : 0);
+    brs.push({ f: bf, g: bg, len: blen });
+  }
+  if (!brs.length) { brs.push({ f: 0, g: m - 1, len: total }); }
+  brs.sort(function (a, b) { return b.len - a.len; });
+  var B1 = branchPts(brs[0].f, brs[0].g), B2 = null;
+  for (t = 1; t < brs.length; t++) {
+    if (B1.len > 1e-6 && Math.abs(brs[t].len - B1.len) < 0.15 * B1.len) {
+      B2 = branchPts(brs[t].f, brs[t].g);
+      break;
+    }
+  }
+  var res = [], rel = [], q, N = Math.max(8, Math.round(B1.len));
+  for (q = 0; q <= N; q++) {
+    var sl = B1.len * q / N;
+    var a = sampleAt(B1, sl), ax = a[0], ay = a[1], chv = B1.chs[a[2]];
+    if (B2 && B2.len > 1e-6) {
+      var b = sampleAt(B2, B2.len - sl);
+      ax = (ax + b[0]) / 2;
+      ay = (ay + b[1]) / 2;
+      chv = Math.min(chv, B2.chs[b[2]]);
+    }
+    res.push(patch.ox + ax, patch.oy + ay);
+    rel.push(chv);
+  }
+  var sorted = rel.slice().sort(function (a, b) { return a - b; });
+  var med = sorted[sorted.length >> 1];
+  if (!(med > 0)) return null;
+  var lo = 0, hi = res.length / 2 - 1;
+  while (lo <= hi && rel[lo] < 0.5 * med) lo++;
+  while (hi >= lo && rel[hi] < 0.5 * med) hi--;
+  var trimmed = res.slice(lo * 2, hi * 2 + 2);
+  if (trimmed.length < 6) return null;
+  res = trimmed;
+  var nres = res.length / 2, ps;
+  if (nres >= 5) {
+    for (var pass = 0; pass < 2; pass++) {
+      var sm = res.slice();
+      for (i = 1; i < nres - 1; i++) {
+        sm[i * 2] = (res[(i - 1) * 2] + 2 * res[i * 2] + res[(i + 1) * 2]) / 4;
+        sm[i * 2 + 1] = (res[(i - 1) * 2 + 1] + 2 * res[i * 2 + 1] + res[(i + 1) * 2 + 1]) / 4;
+      }
+      res = sm;
+    }
+  }
+  // Suppress end-cap chatter. Near a cap the two marching directions pick
+  // slightly different chords, so the centre line jitters back and forth by a
+  // pixel or two; left in, that chatter reverses the point order and defeats
+  // RDP. Work on the ends only, and only where the local path is heading
+  // backwards, so genuine curvature is untouched.
+  nres = res.length / 2;
+  if (nres >= 10) {
+    var fx = res[(nres - 1) * 2] - res[0], fy = res[(nres - 1) * 2 + 1] - res[1];
+    var fl = Math.sqrt(fx * fx + fy * fy);
+    if (fl > 1e-9) {
+      fx /= fl; fy /= fl;
+      var travel = new Float64Array(nres);
+      for (i = 0; i < nres; i++) travel[i] = (res[i * 2] - res[0]) * fx + (res[i * 2 + 1] - res[1]) * fy;
+      var run = 0, capA = 0, capB = 0;
+      for (i = 1; i < nres; i++) {
+        var step = travel[i] - travel[i - 1];
+        if (step < -0.01) { capA++; capB++; run = 0; } else run += step;
+        if (run > 12) capB = 0;
+      }
+      if (capA > 0 && capA < nres * 0.25) {
+        // enforce monotonic travel inside the chattering caps
+        for (var side = 0; side < 2; side++) {
+          var mono = travel[side ? nres - 1 : 0];
+          for (i = side ? nres - 2 : 1; side ? i >= 0 : i < nres; side ? i-- : i++) {
+            if (side) { if (travel[i] > mono) travel[i] = mono; else mono = travel[i]; }
+            else { if (travel[i] < mono) travel[i] = mono; else mono = travel[i]; }
+          }
+        }
+        for (i = 0; i < nres; i++) {
+          res[i * 2] = res[0] + travel[i] * fx;
+          res[i * 2 + 1] = res[1] + travel[i] * fy;
+        }
+      }
+    }
+  }
+  if (!(polyLength(res) > 0.15 * total)) return null;
+  dx = res[0] - res[res.length - 2];
+  dy = res[1] - res[res.length - 1];
+  if (Math.sqrt(dx * dx + dy * dy) < 1.5 && med > 2) return null;
+  var ded = [];
+  for (i = 0; i < res.length; i += 2) {
+    if (!ded.length || Math.abs(res[i] - ded[ded.length - 2]) > 1e-6 || Math.abs(res[i + 1] - ded[ded.length - 1]) > 1e-6) {
+      ded.push(res[i], res[i + 1]);
+    }
+  }
+  return ded.length >= 6 ? ded : null;
+}
+
+function strokePaths(loop, thinW) {
+  if (!(thinW > 0)) return null;
+  var cw = caliperWidths(loop);
+  if (!cw || cw[0] > thinW * 8) return null;
+  var patch = rasterizeLoop(loop);
+  if (!patch || patch.w < 3 || patch.h < 3) return null;
+  if (patch.w * patch.h > 2000000) return null;
+  var dt = distanceTransform(patch.w, patch.h, patch.data);
+  var D = 0, i;
+  for (i = 0; i < dt.length; i++) if (dt[i] > D && dt[i] < 1e9) D = dt[i];
+  // D is the half-width, so 2*D is the measured stroke thickness. Compare it
+  // against the user's "thickest stroke" limit directly: scaling the limit
+  // (thinW * 1.4) pushed 8-10px diagonals past the gate, and they silently
+  // degraded into shredded outline fragments instead of one centre line.
+  if (2 * D > thinW + 1) return null;
+  if (cw[1] < 5 * D) return null;
+  var cl = strokeCenterline(loop, patch, dt, D);
+  return cl ? [cl] : null;
+}
+
+function lineErr(p, i, j) {
+  var n = j - i + 1;
+  if (n < 2) return 0;
+  if (n === 2) return Math.hypot(p[j * 2] - p[i * 2], p[j * 2 + 1] - p[i * 2 + 1]);
+  // Least-squares line through the whole range. Using the first/last point as
+  // the reference makes the measure hostage to endpoint noise: a straight
+  // rasterized diagonal spans ~1.3px of unavoidable quantization, which over a
+  // long range exceeds eps and shreds the edge into many short segments.
+  var sx = 0, sy = 0, sxx = 0, sxy = 0, k;
+  for (k = i; k <= j; k++) {
+    var px = p[k * 2], py = p[k * 2 + 1];
+    sx += px; sy += py; sxx += px * px; sxy += px * py;
+  }
+  var den = n * sxx - sx * sx;
+  var mx, my;
+  if (Math.abs(den) < 1e-9) {
+    mx = 0; my = sy / n;
+  } else {
+    mx = (n * sxy - sx * sy) / den;
+    my = (sy - mx * sx) / n;
+  }
+  var norm = Math.sqrt(mx * mx + 1);
+  var worst = 0;
+  for (k = i; k <= j; k++) {
+    var d = Math.abs(mx * (p[k * 2]) - p[k * 2 + 1] + my) / norm;
+    if (d > worst) worst = d;
+  }
+  return worst;
+}
+
+function lineSplitAt(p, i, j) {
+  var ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
+  var dx = bx - ax, dy = by - ay;
+  var L = Math.sqrt(dx * dx + dy * dy);
+  var mx = -1, mi = -1, k, d;
+  for (k = i + 1; k < j; k++) {
+    var ex = p[k * 2] - ax, ey = p[k * 2 + 1] - ay;
+    d = L < 1e-9 ? Math.sqrt(ex * ex + ey * ey) : Math.abs(ex * dy - ey * dx) / L;
+    if (d > mx) { mx = d; mi = k; }
+  }
+  return mi;
+}
+
+function norm2pi(t) {
+  t = t % (Math.PI * 2);
+  if (t < 0) t += Math.PI * 2;
+  return t;
+}
+
+function arcFitRange(p, i, j) {
+  var m = j - i + 1;
+  if (m < 5) return null;
+  var sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0, k, x, y, z;
+  for (k = i; k <= j; k++) {
+    x = p[k * 2]; y = p[k * 2 + 1]; z = x * x + y * y;
+    sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sxz += x * z; syz += y * z; sz += z;
+  }
+  var sol = solve3([[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, m]], [sxz, syz, sz]);
+  if (!sol) return null;
+  var cx = sol[0] / 2, cy = sol[1] / 2;
+  var rr = sol[2] + (sol[0] * sol[0] + sol[1] * sol[1]) / 4;
+  if (!(rr > 1e-9) || rr > 1e14) return null;
+  var r = Math.sqrt(rr);
+  if (!isFinite(r) || r > 1e6) return null;
+  var e = 0, ex, ey, d;
+  for (k = i; k <= j; k++) {
+    ex = p[k * 2] - cx; ey = p[k * 2 + 1] - cy;
+    d = Math.abs(Math.sqrt(ex * ex + ey * ey) - r);
+    if (d > e) e = d;
+  }
+  var s = 0;
+  for (k = i; k < j; k++) s += (p[k * 2] - p[(k + 1) * 2]) * (p[k * 2 + 1] + p[(k + 1) * 2 + 1]);
+  var area = s / 2;
+  var a1 = Math.atan2(p[i * 2 + 1] - cy, p[i * 2] - cx);
+  var a2 = Math.atan2(p[j * 2 + 1] - cy, p[j * 2] - cx);
+  var ccw = area >= 0;
+  var sweep = ccw ? norm2pi(a2 - a1) : norm2pi(a1 - a2);
+  if (sweep > Math.PI * 348 / 180) return null;
+  if (sweep < Math.PI * 0.5 / 180) return null;
+  var gap = 0;
+  for (k = i; k < j; k++) {
+    ex = p[(k + 1) * 2] - cx; ey = p[(k + 1) * 2 + 1] - cy;
+    var pa = Math.atan2(p[k * 2 + 1] - cy, p[k * 2] - cx);
+    var na = Math.atan2(ey, ex);
+    var d2 = na - pa;
+    while (d2 > Math.PI) d2 -= 2 * Math.PI;
+    while (d2 < -Math.PI) d2 += 2 * Math.PI;
+    if (d2 < 0) d2 = -d2;
+    if (d2 > gap) gap = d2;
+  }
+  if (gap > Math.PI * 120 / 180) return null;
+  return { cx: cx, cy: cy, r: r, err: e, ccw: ccw, a1: a1, a2: a2 };
+}
+
+function segmentize(p, tol, closed) {
+  var out = [];
+  var chains = [];
+  var n = p.length >> 1;
+  if (n < 2) return out;
+  if (closed && n > 3) {
+    var m = 1, best = -1;
+    for (var t = 1; t < n; t++) {
+      var dx = p[t * 2] - p[0], dy = p[t * 2 + 1] - p[1];
+      var dd = dx * dx + dy * dy;
+      if (dd > best) { best = dd; m = t; }
+    }
+    chains = [[0, m], [m, n - 1]];
+  } else {
+    chains = [[0, n - 1]];
+  }
+  for (var c = 0; c < chains.length; c++) {
+    var ci = chains[c][0], cj = chains[c][1];
+    if (cj <= ci) continue;
+    var stack = [[ci, cj]];
+    var sub = [];
+    while (stack.length) {
+      var seg = stack.pop();
+      var i = seg[0], j = seg[1];
+      if (j - i === 1 || lineErr(p, i, j) <= tol) {
+        sub.push([i, { type: 'LINE', pts: [p[i * 2], p[i * 2 + 1], p[j * 2], p[j * 2 + 1]] }]);
+        continue;
+      }
+      // An arc needs >=4 points: any 3 points define a circle exactly, so a
+      // 3-point range fits a huge-radius semicircle across a sharp corner.
+      var gotArc = false;
+      if (j - i >= 3) {
+        var af = arcFitRange(p, i, j);
+        if (af) {
+          var chx = p[i * 2] - p[j * 2], chy = p[i * 2 + 1] - p[j * 2 + 1];
+          var chL = Math.sqrt(chx * chx + chy * chy);
+          var swp = Math.abs(af.a2 - af.a1);
+          if (swp > Math.PI) swp = 2 * Math.PI - swp;
+          // Reject degenerate arcs: a corner cluster can be near-concyclic with
+          // a large radius and a huge sweep. Real contour arcs are gentle.
+          if (af.r <= 3 * chL + 1 && swp <= 150 * Math.PI / 180 && af.err <= tol) {
+            sub.push([i, { type: 'ARC', cx: af.cx, cy: af.cy, r: af.r, a1: af.a1, a2: af.a2, ccw: af.ccw }]);
+            gotArc = true;
+          }
+        }
+      }
+      if (gotArc) continue;
+      var mid = lineSplitAt(p, i, j);
+      if (mid <= i || mid >= j) {
+        sub.push([i, { type: 'LINE', pts: [p[i * 2], p[i * 2 + 1], p[j * 2], p[j * 2 + 1]] }]);
+        continue;
+      }
+      stack.push([i, mid], [mid, j]);
+    }
+    // emit in loop order so downstream collinear merging sees real neighbours
+    sub.sort(function (u, v) { return u[0] - v[0]; });
+    for (var q = 0; q < sub.length; q++) out.push(sub[q][1]);
+  }
+  if (closed && out.length > 1) {
+    var f = out[0], l = out[out.length - 1];
+    if (f.type === 'LINE' && l.type === 'LINE') {
+      var ax = l.pts[0], ay = l.pts[1], bx = f.pts[2], by = f.pts[3];
+      var vx = f.pts[0] - ax, vy = f.pts[1] - ay, wx = bx - f.pts[0], wy = by - f.pts[1];
+      var l1 = Math.sqrt(vx * vx + vy * vy), l2 = Math.sqrt(wx * wx + wy * wy);
+      if (l1 > 1e-9 && l2 > 1e-9) {
+        var cs = (vx * wx + vy * wy) / (l1 * l2);
+        if (cs > 1) cs = 1;
+        if (cs < -1) cs = -1;
+        if (Math.acos(cs) * 180 / Math.PI <= 4 && l1 + l2 > 1e-9) {
+          out[out.length - 1] = { type: 'LINE', pts: [ax, ay, bx, by] };
+          out.shift();
+        }
+      }
+    }
+  }
+  return out;
+}
+
+// Rasterized corners are chamfered, so a contour's fitted edges stop a
+// pixel or two short of each other and the closed outline shows visible gaps.
+// Where two neighbouring edges clearly belong to the same corner, extend them
+// to their intersection. Only near-parallel or wildly diverging pairs are left
+// alone, so genuine geometry is never distorted.
+function closeChainGaps(prims, maxGap) {
+  var L = [];
+  for (var i = 0; i < prims.length; i++) if (prims[i].type === 'LINE') L.push(i);
+  if (L.length < 2) return prims;
+  for (var a = 0; a < L.length; a++) {
+    for (var b = a + 1; b < L.length; b++) {
+      var i1 = L[a], i2 = L[b];
+      var A = prims[i1].pts, B = prims[i2].pts;
+      for (var e1 = 0; e1 < 2; e1++) {
+        for (var e2 = 0; e2 < 2; e2++) {
+          var p1 = e1 ? [A[2], A[3]] : [A[0], A[1]];
+          var q1 = e1 ? [A[0], A[1]] : [A[2], A[3]];
+          var p2 = e2 ? [B[2], B[3]] : [B[0], B[1]];
+          var q2 = e2 ? [B[0], B[1]] : [B[2], B[3]];
+          var g = Math.hypot(p1[0] - p2[0], p1[1] - p2[1]);
+          if (g > maxGap || g < 1e-9) continue;
+          var d1x = q1[0] - p1[0], d1y = q1[1] - p1[1];
+          var d2x = q2[0] - p2[0], d2y = q2[1] - p2[1];
+          var l1 = Math.hypot(d1x, d1y), l2 = Math.hypot(d2x, d2y);
+          if (l1 < 1e-9 || l2 < 1e-9) continue;
+          var ip = rayIntersect(p1[0], p1[1], d1x / l1, d1y / l1, p2[0], p2[1], d2x / l2, d2y / l2);
+          if (!ip) continue;
+          // both extended endpoints must stay within maxGap of the corner
+          if (Math.hypot(ip[0] - p1[0], ip[1] - p1[1]) > maxGap) continue;
+          if (Math.hypot(ip[0] - p2[0], ip[1] - p2[1]) > maxGap) continue;
+          if (e1) { A[2] = ip[0]; A[3] = ip[1]; } else { A[0] = ip[0]; A[1] = ip[1]; }
+          if (e2) { B[2] = ip[0]; B[3] = ip[1]; } else { B[0] = ip[0]; B[1] = ip[1]; }
+        }
+      }
+    }
+  }
+  return prims;
+}
+
+// Intersection of two rays given as point + unit direction.
+function rayIntersect(ax, ay, adx, ady, bx, by, bdx, bdy) {
+  var den = adx * bdy - ady * bdx;
+  if (Math.abs(den) < 1e-9) return null;
+  var t = ((bx - ax) * bdy - (by - ay) * bdx) / den;
+  if (t <= 1e-9) return null;
+  return [ax + adx * t, ay + ady * t];
+}
+
+function dropDegenerate(prims, minLen) {
+  var out = [];
+  for (var i = 0; i < prims.length; i++) {
+    var e = prims[i];
+    if (e.type === 'LINE') {
+      var dx = e.pts[2] - e.pts[0], dy = e.pts[3] - e.pts[1];
+      if (Math.sqrt(dx * dx + dy * dy) < minLen) continue;
+    } else if (e.r < 0.6) continue;
+    var prev = out[out.length - 1];
+    if (prev && prev.type === e.type) {
+      if (e.type === 'LINE') {
+        var ax = prev.pts[2], ay = prev.pts[3];
+        var gap = Math.hypot(ax - e.pts[0], ay - e.pts[1]);
+        // Rasterized corners are chamfered, so consecutive edges meet a little
+        // short of each other. Accept a small gap, but only when the two edges
+        // are truly collinear; otherwise a corner would become a false chord.
+        if (gap < 0.75) {
+          var pdx = prev.pts[2] - prev.pts[0], pdy = prev.pts[3] - prev.pts[1];
+          var edx = e.pts[2] - e.pts[0], edy = e.pts[3] - e.pts[1];
+          var cr = pdx * edy - pdy * edx;
+          var dt2 = pdx * edx + pdy * edy;
+          if (cr * cr <= 1e-4 * (pdx * pdx + pdy * pdy) * (edx * edx + edy * edy) && dt2 > 0) {
+            prev.pts[2] = e.pts[2];
+            prev.pts[3] = e.pts[3];
+            continue;
+          }
+        }
+      } else if (Math.abs(prev.cx - e.cx) < 1e-6 && Math.abs(prev.cy - e.cy) < 1e-6 && Math.abs(prev.r - e.r) < 1e-6 && prev.ccw === e.ccw) {
+        prev.a2 = e.a2;
+        continue;
+      }
+    }
+    out.push(e);
+  }
+  return out;
+}
+
+function buildEntities(loops, o) {
+  var eps = o.eps;
+  var mode = o.mode === 'pline' ? 'pline' : 'prim';
+  var thinW = o.thinWidth || 0;
+  var vecs = [], nCircle = 0, nLine = 0, nArc = 0, nPline = 0, nVert = 0, nStroke = 0;
+
+  function addPrim(prim, hole) {
+    for (var i = 0; i < prim.length; i++) {
+      var e = prim[i];
+      e.hole = hole;
+      vecs.push(e);
+      if (e.type === 'LINE') nLine++;
+      else if (e.type === 'ARC') nArc++;
+      nVert += e.type === 'LINE' ? 2 : 3;
+    }
+  }
+  function addPoly(pts, hole) {
+    if (mode === 'pline') {
+      var p = (hole && o.revHole) ? pts.slice().reverse() : pts;
+      vecs.push({ type: 'PLINE', pts: p, hole: hole, closed: true });
+      nPline++;
+      nVert += p.length >> 1;
+      return;
+    }
+    var prims = dropDegenerate(segmentize(pts, Math.max(0.25, eps), true), Math.max(0.35, eps * 0.35));
+    addPrim(closeChainGaps(prims, Math.max(2.5, eps * 4)), hole);
+  }
+  function addStroke(pts, hole) {
+    var tol = Math.max(0.75, eps);
+    var closed = false;
+    if (pts.length >= 8) {
+      var d = Math.hypot(pts[0] - pts[pts.length - 2], pts[1] - pts[pts.length - 1]);
+      // Only treat as a closed ring when there is a real interior to keep.
+      // Dropping the repeated last point from a 2-point polyline would leave a
+      // single vertex, i.e. no geometry at all.
+      if (d < 1.5 && pts.length >= 12) { pts = pts.slice(0, pts.length - 2); closed = true; }
+    }
+    if (mode === 'pline') {
+      vecs.push({ type: 'PLINE', pts: pts, hole: hole, closed: closed });
+      nPline++;
+      nVert += pts.length >> 1;
+      return;
+    }
+    var seg = segmentize(pts, tol, closed);
+    // RDP on a closed contour returns the same vertex at both ends. Feeding
+    // that duplicate pair to segmentize yields a zero-length LINE that is then
+    // discarded, silently deleting the whole stroke. Drop the repeat unless the
+    // curve really is a ring.
+    if (!closed && seg.length === 1 && seg[0].type === 'LINE') {
+      var q = seg[0].pts;
+      if (Math.hypot(q[2] - q[0], q[3] - q[1]) < 1e-6) {
+        var far = -1, best = 0;
+        for (var t = 0; t < pts.length / 2; t++) {
+          var dd = Math.hypot(pts[t * 2] - pts[0], pts[t * 2 + 1] - pts[1]);
+          if (dd > best) { best = dd; far = t; }
+        }
+        if (far > 0) seg = [{ type: 'LINE', pts: [pts[0], pts[1], pts[far * 2], pts[far * 2 + 1]] }];
+      }
+    }
+    var prims = dropDegenerate(seg, 0.3);
+    addPrim(prims, hole);
+  }
+
+  for (var j = 0; j < loops.length; j++) {
+    var L = loops[j];
+    var col = simplifyClosed(dropCollinear(L.pts), Math.min(eps, 2.5));
+    if (col.length < 6) continue;
+    if (L.area >= 10) {
+      var paths = strokePaths(L.pts, thinW);
+      if (paths) {
+        nStroke += paths.length;
+        for (var s = 0; s < paths.length; s++) {
+          var sp = paths[s], sn = sp.length >> 1;
+          addStroke(rdpRange(sp, 0, sn - 1, 0.6), L.hole);
+        }
+        continue;
+      }
+    }
+    if (o.circle) {
+      var fit = fitCircle(col);
+      if (fit && fit.r > 3 && fit.rms <= Math.max(1.0, o.ctol * fit.r) && fit.maxGap < Math.PI * 330 / 180) {
+        vecs.push({ type: 'CIRCLE', cx: fit.cx, cy: fit.cy, r: fit.r, hole: L.hole });
+        nCircle++;
+        continue;
+      }
+    }
+    addPoly(col, L.hole);
+  }
+  return {
+    entities: vecs, nCircle: nCircle, nLine: nLine, nArc: nArc,
+    nPline: nPline, nVert: nVert, nStroke: nStroke
+  };
+}
+
+function fmtNum(v, digits) {
+  if (!isFinite(v)) v = 0;
+  var s = v.toFixed(digits);
+  if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  if (s === '-0' || s === '') s = '0';
+  return s;
+}
+
+function fmtAng(v) {
+  var d = v * 180 / Math.PI;
+  d = ((d % 360) + 360) % 360;
+  return fmtNum(Math.round(d * 100) / 100, 2);
+}
+
+function toCommands(entities, o) {
+  var scale = o.scale, dig = o.digits;
+  var pf = o.prefix ? '_' : '';
+  var cx0 = o.pw / 2, cy0 = o.ph / 2;
+  var lines = [];
+  if (o.insunits && entities.length) lines.push((pf ? '_.' : '') + 'INSUNITS ' + o.unitCode);
+  function tx(x) { return (x - cx0) * scale; }
+  function ty(y) { return (cy0 - y) * scale; }
+  for (var v = 0; v < entities.length; v++) {
+    var e = entities[v];
+    if (e.type === 'CIRCLE') {
+      lines.push(pf + 'CIRCLE ' + fmtNum(tx(e.cx), dig) + ',' + fmtNum(ty(e.cy), dig) + ' ' + fmtNum(e.r * scale, dig));
+    } else if (e.type === 'ARC') {
+      var A = e.a1, B = e.a2;
+      if (!e.ccw) { var tmp = A; A = B; B = tmp; }
+      var ya = -A, yb = -B;
+      if (ya < 0) ya += 360;
+      if (yb < 0) yb += 360;
+      lines.push(pf + 'ARC ' + fmtNum(tx(e.cx), dig) + ',' + fmtNum(ty(e.cy), dig) + ' ' +
+        fmtNum(e.r * scale, dig) + ' ' + fmtAng(ya) + ' ' + fmtAng(yb));
+    } else {
+      var q = e.pts, parts = [];
+      for (var t = 0; t < q.length; t += 2) parts.push(fmtNum(tx(q[t]), dig) + ',' + fmtNum(ty(q[t + 1]), dig));
+      if (e.type === 'LINE') {
+        lines.push(pf + 'LINE ' + parts[0] + ' ' + parts[1]);
+      } else {
+        lines.push(pf + 'PLINE ' + parts.join(' ') + (e.closed ? ' C' : ''));
+      }
+    }
+  }
+  if (o.zoom && lines.length) {
+    lines.push((pf ? '_.' : '') + 'ZOOM');
+    lines.push('E');
+  }
+  return lines;
+}
+
+globalThis.Image2Cad = {
+  DX: DX, DY: DY, TRANS: TRANS, solve3: solve3, toGray: toGray, boxBlur: boxBlur,
+  otsu: otsu, binarize: binarize, morph: morph, traceContours: traceContours,
+  signedArea: signedArea, bbox: bbox, dropCollinear: dropCollinear,
+  rdpRange: rdpRange, simplifyClosed: simplifyClosed, mergeSegments: mergeSegments,
+  fitCircle: fitCircle, caliperWidths: caliperWidths, insetRadius: insetRadius,
+  loopIsThin: loopIsThin, rasterizeLoop: rasterizeLoop, distanceTransform: distanceTransform,
+  strokeCenterline: strokeCenterline, strokePaths: strokePaths,
+  polyLength: polyLength, resampleClosed: resampleClosed,
+  lineErr: lineErr, arcFitRange: arcFitRange, segmentize: segmentize,
+  buildEntities: buildEntities, fmtNum: fmtNum, fmtAng: fmtAng, toCommands: toCommands
+};
+</script>
+
+<script>
+(function () {
+  var C = globalThis.Image2Cad;
+  function $(id) { return document.getElementById(id); }
+
+  var view = $('view'), ctx = view.getContext('2d');
+  var empty = $('empty'), drop = $('drop'), fileInput = $('file');
+  var out = $('out'), stats = $('stats'), warn = $('warn'), imgMeta = $('imgMeta');
+  var copyBtn = $('copy'), scrBtn = $('scr'), txtBtn = $('txt');
+
+  var state = {
+    src: null, name: '', pw: 0, ph: 0, ow: 0, oh: 0,
+    binCanvas: null, bg: 0, vm: { s: 1, x: 0, y: 0 },
+    vec: null, text: '', busy: false, pending: false
+  };
+
+  var IDS = ['res', 'autoTh', 'th', 'inv', 'blur', 'morph', 'minArea', 'eps', 'holes', 'outerOnly', 'mode', 'thin', 'circle', 'ctol', 'scale', 'unit', 'prefix', 'insu', 'zoom', 'revHole'];
+  function get(id) { return $(id); }
+
+  function syncLabels() {
+    $('blurV').textContent = get('blur').value;
+    $('minAreaV').textContent = get('minArea').value + ' px²';
+    $('epsV').textContent = (+get('eps').value).toFixed(1) + ' px';
+    $('ctolV').textContent = (+get('ctol').value).toFixed(1) + '%';
+    $('thinV').textContent = (+get('thin').value) === 0 ? '关闭' : get('thin').value + ' px';
+    get('th').disabled = get('autoTh').checked;
+    if (!get('autoTh').checked) $('thV').textContent = get('th').value;
+    var u = get('unit').value;
+    $('unitTxt').textContent = u === '4' ? ' mm/px' : u === '1' ? ' in/px' : ' 单位/px';
+  }
+
+  function fitView() {
+    if (!state.pw) return;
+    var cw = view.clientWidth, ch = view.clientHeight;
+    var s = Math.min(cw / state.pw, ch / state.ph) * 0.9;
+    state.vm = { s: s, x: (cw - state.pw * s) / 2, y: (ch - state.ph * s) / 2 };
+  }
+
+  function render() {
+    var dpr = window.devicePixelRatio || 1;
+    var cw = view.clientWidth, ch = view.clientHeight;
+    var pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
+    if (view.width !== pw || view.height !== ph) { view.width = pw; view.height = ph; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    if (!state.pw) return;
+    var vm = state.vm, i, j;
+    ctx.save();
+    ctx.translate(vm.x, vm.y);
+    ctx.scale(vm.s, vm.s);
+    if (state.bg === 0 && state.src) {
+      ctx.globalAlpha = 0.3;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(state.src, 0, 0, state.ow, state.oh, 0, 0, state.pw, state.ph);
+      ctx.globalAlpha = 1;
+    } else if (state.bg === 1 && state.binCanvas) {
+      ctx.drawImage(state.binCanvas, 0, 0);
+    }
+    if (state.vec) {
+      ctx.lineWidth = 1.1 / vm.s;
+      ctx.lineJoin = 'round';
+      for (i = 0; i < state.vec.length; i++) {
+        var e = state.vec[i];
+        if (e.type === 'CIRCLE') {
+          ctx.strokeStyle = '#be123c';
+          ctx.beginPath();
+          ctx.arc(e.cx, e.cy, e.r, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (e.type === 'ARC') {
+          ctx.strokeStyle = e.hole ? '#c2410c' : '#7c3aed';
+          ctx.beginPath();
+          ctx.arc(e.cx, e.cy, e.r, e.a1, e.a2, !e.ccw);
+          ctx.stroke();
+        } else {
+          ctx.strokeStyle = e.hole ? '#c2410c' : '#0f766e';
+          ctx.beginPath();
+          for (j = 0; j < e.pts.length; j += 2) {
+            if (j === 0) ctx.moveTo(e.pts[j], e.pts[j + 1]);
+            else ctx.lineTo(e.pts[j], e.pts[j + 1]);
+          }
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function makeBinCanvas(bin, w, h) {
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var g = c.getContext('2d');
+    var im = g.createImageData(w, h);
+    for (var i = 0; i < w * h; i++) {
+      var v = bin[i] ? 0 : 255;
+      im.data[i * 4] = v; im.data[i * 4 + 1] = v; im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    return c;
+  }
+
+  function run() {
+    syncLabels();
+    if (!state.src) {
+      state.vec = null;
+      state.text = '';
+      out.value = '';
+      stats.textContent = '尚未导入图片';
+      copyBtn.disabled = scrBtn.disabled = txtBtn.disabled = true;
+      warn.classList.remove('show');
+      render();
+      return;
+    }
+    var maxRes = +get('res').value;
+    var ow = state.ow, oh = state.oh;
+    var k = Math.min(1, maxRes / Math.max(ow, oh));
+    var pw = Math.max(8, Math.round(ow * k));
+    var ph = Math.max(8, Math.round(oh * k));
+    state.pw = pw; state.ph = ph;
+
+    var cv = document.createElement('canvas');
+    cv.width = pw; cv.height = ph;
+    var g = cv.getContext('2d', { willReadFrequently: true });
+    g.imageSmoothingEnabled = true;
+    if (k < 1) g.imageSmoothingQuality = 'high';
+    g.drawImage(state.src, 0, 0, pw, ph);
+    var data = g.getImageData(0, 0, pw, ph).data;
+
+    var gray = C.toGray(data, pw * ph, get('inv').checked);
+    gray = C.boxBlur(gray, pw, ph, +get('blur').value);
+    var thr = get('autoTh').checked ? C.otsu(gray) : +get('th').value;
+    if (get('autoTh').checked) $('thV').textContent = '自动 ' + thr;
+    var bin = C.binarize(gray, thr);
+    var mm = +get('morph').value;
+    if (mm) bin = C.morph(bin, pw, ph, mm);
+    state.binCanvas = makeBinCanvas(bin, pw, ph);
+
+    var minArea = +get('minArea').value;
+    var includeHoles = get('holes').checked;
+    var outerOnly = get('outerOnly').checked;
+    var raw = C.traceContours(bin, pw, ph);
+    var loops = [];
+    for (var i = 0; i < raw.length; i++) {
+      var ar = C.signedArea(raw[i]);
+      var hole = ar < 0;
+      if (hole && (outerOnly || !includeHoles)) continue;
+      if (Math.abs(ar) < minArea) continue;
+      loops.push({ pts: raw[i], area: Math.abs(ar), hole: hole });
+    }
+    loops.sort(function (a, b) { return (a.hole ? 1 : 0) - (b.hole ? 1 : 0) || b.area - a.area; });
+
+    var scale = parseFloat(get('scale').value);
+    if (!isFinite(scale) || scale <= 0) scale = 0.5;
+    var built = C.buildEntities(loops, {
+      eps: +get('eps').value,
+      mode: get('mode').value,
+      thinWidth: +get('thin').value,
+      circle: get('circle').checked,
+      ctol: +get('ctol').value / 100,
+      revHole: get('revHole').checked
+    });
+    var vecs = built.entities;
+    state.vec = vecs;
+
+    var lines = C.toCommands(vecs, {
+      pw: pw, ph: ph, scale: scale,
+      digits: get('unit').value === '0' ? 3 : 4,
+      prefix: get('prefix').checked,
+      insunits: get('insu').checked,
+      unitCode: get('unit').value,
+      zoom: get('zoom').checked
+    });
+    state.text = lines.join('\n');
+    out.value = state.text;
+
+    var total = vecs.length;
+    copyBtn.disabled = scrBtn.disabled = txtBtn.disabled = total === 0;
+    stats.innerHTML = total === 0
+      ? '未识别到轮廓，试试调整阈值或降噪'
+      : '轮廓 <b>' + loops.length + '</b>（线条 <b>' + built.nStroke + '</b>） · 圆 <b>' + built.nCircle + '</b> · 直线 <b>' + built.nLine + '</b> · 圆弧 <b>' + built.nArc + '</b> · 多段线 <b>' + built.nPline + '</b> · 指令 <b>' + lines.length + '</b> 行';
+    if (total > 6000) {
+      warn.textContent = '图形数量偏多，复制后 CAD 可能卡顿。建议提高「拟合容差」或「最小面积」。';
+      warn.classList.add('show');
+    } else warn.classList.remove('show');
+
+    imgMeta.textContent = state.name + ' · ' + ow + '×' + oh + ' → ' + pw + '×' + ph;
+    render();
+  }
+
+  var timer = null;
+  function schedule() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () {
+      timer = null;
+      if (state.busy) { state.pending = true; return; }
+      try { run(); } catch (e) { stats.textContent = '处理出错：' + e.message; }
+    }, 160);
+  }
+
+  function loadFile(file) {
+    if (!file || !/^image\//.test(file.type)) return;
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      state.src = img;
+      state.ow = img.naturalWidth || img.width;
+      state.oh = img.naturalHeight || img.height;
+      state.name = file.name || '粘贴的图片';
+      empty.style.display = 'none';
+      state.busy = true;
+      try { run(); } catch (e) { stats.textContent = '处理出错：' + e.message; }
+      state.busy = false;
+      if (state.pending) { state.pending = false; schedule(); }
+      fitView();
+      render();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      stats.textContent = '这张图片打不开，换一张试试';
+    };
+    img.src = url;
+  }
+
+  $('pick').addEventListener('click', function () { fileInput.click(); });
+  drop.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () { loadFile(fileInput.files[0]); fileInput.value = ''; });
+
+  window.addEventListener('dragenter', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  window.addEventListener('dragleave', function (e) { e.preventDefault(); if (!e.relatedTarget) drop.classList.remove('over'); });
+  window.addEventListener('drop', function (e) {
+    e.preventDefault();
+    drop.classList.remove('over');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+  window.addEventListener('paste', function (e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image/') === 0) {
+        loadFile(items[i].getAsFile());
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+
+  $('segBg').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    state.bg = +b.dataset.v;
+    var kids = this.children;
+    for (var i = 0; i < kids.length; i++) kids[i].classList.toggle('on', kids[i] === b);
+    render();
+  });
+
+  for (var q = 0; q < IDS.length; q++) {
+    var el = get(IDS[q]);
+    el.addEventListener('input', schedule);
+    el.addEventListener('change', schedule);
+  }
+
+  function fallbackCopy(done) {
+    out.focus();
+    out.select();
+    out.setSelectionRange(0, out.value.length);
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    if (ok) done();
+    else {
+      copyBtn.textContent = '请手动全选复制';
+      setTimeout(function () { copyBtn.textContent = '复制指令'; }, 1800);
+    }
+  }
+
+  copyBtn.addEventListener('click', function () {
+    if (!state.text) return;
+    var done = function () {
+      copyBtn.textContent = '已复制';
+      setTimeout(function () { copyBtn.textContent = '复制指令'; }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(state.text).then(done, function () { fallbackCopy(done); });
+    } else fallbackCopy(done);
+  });
+
+  function download(name, text) {
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function baseName() { return (state.name || 'image').replace(/\.[^.]+$/, '') || 'image'; }
+  scrBtn.addEventListener('click', function () { if (state.text) download(baseName() + '.scr', state.text); });
+  txtBtn.addEventListener('click', function () { if (state.text) download(baseName() + '_cad.txt', state.text); });
+
+  var drag = null;
+  view.addEventListener('mousedown', function (e) {
+    drag = { x: e.clientX, y: e.clientY, vx: state.vm.x, vy: state.vm.y };
+    view.classList.add('drag');
+  });
+  window.addEventListener('mouseup', function () { drag = null; view.classList.remove('drag'); });
+  window.addEventListener('mousemove', function (e) {
+    if (!drag) return;
+    state.vm.x = drag.vx + e.clientX - drag.x;
+    state.vm.y = drag.vy + e.clientY - drag.y;
+    render();
+  });
+  view.addEventListener('wheel', function (e) {
+    if (!state.pw) return;
+    e.preventDefault();
+    var r = view.getBoundingClientRect();
+    var mx = e.clientX - r.left, my = e.clientY - r.top;
+    var f = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    var ns = Math.min(40, Math.max(0.05, state.vm.s * f));
+    state.vm.x = mx - (mx - state.vm.x) * (ns / state.vm.s);
+    state.vm.y = my - (my - state.vm.y) * (ns / state.vm.s);
+    state.vm.s = ns;
+    render();
+  }, { passive: false });
+  view.addEventListener('dblclick', function () { fitView(); render(); });
+
+  window.addEventListener('resize', function () { fitView(); render(); });
+  syncLabels();
+  render();
+})();
+</script>
+</body>
+</html>

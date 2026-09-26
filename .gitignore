@@ -1,0 +1,28 @@
+# .NET build output
+bin/
+obj/
+out/
+publish/
+*.user
+*.suo
+*.userprefs
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Generated instrumented test pages (make-*.mjs writes these)
+*-page.html
+
+# Generated icon preview
+packaging/icon.png
+tools/IconGen/icon.png
+tools/IconGen/icon.ico
+
+# Scratch / debug artefacts
+*.log
+dom*.txt
+shot-*.png
+checkpoint-*.html
+*-backup.html
+replaced-by-*.html

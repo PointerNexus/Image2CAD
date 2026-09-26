@@ -1,0 +1,13 @@
+# Normalise line endings in the repository; check out per platform.
+* text=auto
+
+# Binaries - never touch
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.exe binary
+*.dll binary
+
+# The app is served to a browser: keep it LF and never mangle whitespace.
+image2cad.html text eol=lf
