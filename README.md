@@ -27,7 +27,7 @@
 
 ## 这是什么
 
-给它一张 PNG 或 JPG，它还给你一堆**能在 CAD 里直接选中、编辑**的线条和圆弧 —— 可以拿去激光切割、数控加工，或者接着改。
+上传一张图片，自动识别图片轮廓并生成 CAD 线条指令，直接复制进 CAD 命令行就可以看到图像了。
 
 | 输入 | 输出 |
 |---|---|
@@ -38,9 +38,8 @@
 
 ## What this is
 
-Give it a PNG or JPG and it hands back `LINE`, `ARC`, `CIRCLE` and `PLINE`
-entities you can select and edit in CAD &mdash; ready for laser cutting, CNC, or
-further editing.
+Upload an image and it detects the contours automatically and generates CAD
+line commands. Paste them into the CAD command line and the image appears.
 
 | | |
 |---|---|
